@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "okf-knowledge-engine": {
+      "url": "http://localhost:8080/mcp"
+    }
+  }
+}

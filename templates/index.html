@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8">
+  <title>OKF v0.2 Knowledge Manager</title>
+
+  <!-- htmx -->
+  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+
+  <!-- UnoCSS Runtime -->
+  <script src="https://cdn.jsdelivr.net/npm/@unocss/runtime"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@unocss/reset/tailwind.min.css">
+
+
+  <!-- Force Graph Library -->
+  <script src="https://unpkg.com/force-graph"></script>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col">
+  <!-- Header -->
+  <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur px-6 py-4 flex items-center justify-
+  between">
+    <div class="flex items-center gap-3">
+      <div class="text-cyan-400 text-xl font-bold">⚡ OKF Engine</div>
+      <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800">In-Memory
+        Mode</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+      <!-- htmx Live Search Input -->
+      <div class="w-80">
+        <input type="search" name="q" placeholder="Filter concepts..."
+          class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-cyan-500"
+          hx-get="/search" hx-trigger="keyup changed delay:150ms" hx-target="#concept-list" />
+      </div>
+
+      <!-- Graph View Trigger Button -->
+      <button onclick="openGraphModal()"
+        class="text-xs px-3 py-1.5 rounded-lg bg-cyan-950 text-cyan-400 border border-cyan-800 hover:bg-cyan-900 transition-colors flex items-center gap-1.5 font-medium cursor-pointer">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+        Graph View
+      </button>
+    </div>
+
+  </header>
+
+  <!-- Main Layout -->
+  <div class="flex-1 grid grid-cols-12 gap-6 p-6">
+    <!-- Sidebar List -->
+    <aside id="concept-list" class="col-span-4 bg-slate-900/40 border border-slate-800 rounded-xl p-4">
+      {{ template "list.html" . }}
+    </aside>
+
+    <!-- Content Workspace -->
+    <section id="workspace" class="col-span-8 bg-slate-900/40 border border-slate-800 rounded-xl p-6">
+      <div class="text-slate-500 text-center py-20">Select a concept from the sidebar to inspect.</div>
+    </section>
+  </div>
+
+  <!-- Interactive 2D Knowledge Graph Modal -->
+  <div id="graph-modal" style="display: none;"
+    class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur z-50 flex items-center justify-center p-6">
+    <div
+      class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-5xl h-[80vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="p-4 border-b border-slate-800 flex justify-between items-center bg-slate-950/50">
+        <div class="flex items-center gap-4">
+          <h3 class="text-sm font-bold text-slate-200">Interactive Knowledge Graph</h3>
+          <div class="flex items-center gap-3 text-xs">
+            <span class="flex items-center gap-1 text-emerald-400"><span
+                class="w-2 h-2 rounded-full bg-emerald-500"></span> Human-Reviewed</span>
+            <span class="flex items-center gap-1 text-blue-400"><span class="w-2 h-2 rounded-full bg-blue-500"></span>
+              Machine-Confirmed</span>
+            <span class="flex items-center gap-1 text-slate-400"><span class="w-2 h-2 rounded-full bg-slate-500"></span>
+              Unverified</span>
+          </div>
+        </div>
+        <button onclick="closeGraphModal()" class="text-slate-400 hover:text-white px-2 py-1 font-bold">✕</button>
+      </div>
+      <div id="graph-container" class="flex-1 w-full h-full bg-slate-950"></div>
+    </div>
+  </div>
+
+  <script>
+    let graphInstance = null;
+    let activeConceptId = null; // Tracks currently active concept ID
+
+    // Track the active concept when loaded via htmx
+    document.body.addEventListener('htmx:afterOnLoad', function (evt) {
+      if (evt.detail.target.id === 'workspace') {
+        const urlParams = new URLSearchParams(evt.detail.xhr.responseURL || '');
+        const conceptId = urlParams.get('id');
+        if (conceptId) {
+          activeConceptId = conceptId;
+        }
+      }
+    });
+
+    function setActiveConcept(id) {
+      activeConceptId = id;
+    }
+
+    function openGraphModal() {
+      const modal = document.getElementById('graph-modal');
+      modal.style.display = 'flex';
+
+      fetch('/api/graph')
+        .then(res => res.json())
+        .then(data => {
+          const elem = document.getElementById('graph-container');
+          elem.innerHTML = '';
+
+          graphInstance = ForceGraph()(elem)
+            .graphData(data)
+            .nodeId('id')
+            .nodeCanvasObject((node, ctx, globalScale) => {
+              const label = node.title || node.id;
+              const radius = 7;
+              const isSelected = (node.id === activeConceptId);
+
+              // 1. Draw Cyan Glowing Border Ring if node is selected
+              if (isSelected) {
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius + 5, 0, 2 * Math.PI, false);
+                ctx.fillStyle = 'rgba(34, 211, 238, 0.25)'; // Glowing Cyan halo
+                ctx.fill();
+
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, radius + 2.5, 0, 2 * Math.PI, false);
+                ctx.strokeStyle = '#22d3ee'; // Bright Cyan Border
+                ctx.lineWidth = 2.5 / globalScale;
+                ctx.stroke();
+              }
+
+              // 2. Draw Main Node Circle
+              ctx.beginPath();
+              ctx.arc(node.x, node.y, radius, 0, 2 * Math.PI, false);
+              if (node.trustTier === 'Human-Reviewed') ctx.fillStyle = '#10b981';
+              else if (node.trustTier === 'Machine-Confirmed') ctx.fillStyle = '#3b82f6';
+              else if (node.trustTier === 'Stale') ctx.fillStyle = '#f59e0b';
+              else ctx.fillStyle = '#64748b';
+              ctx.fill();
+
+              ctx.strokeStyle = '#0f172a';
+              ctx.lineWidth = 1 / globalScale;
+              ctx.stroke();
+
+              // 3. Draw Label Below Node
+              const fontSize = 11 / globalScale;
+              ctx.font = `${isSelected ? 'bold ' : ''}${fontSize}px Sans-Serif`;
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'top';
+              ctx.fillStyle = isSelected ? '#38bdf8' : '#94a3b8';
+              ctx.fillText(label, node.x, node.y + radius + 3);
+            })
+            .linkColor(() => '#334155')
+            .linkDirectionalParticles(2)
+            .linkDirectionalParticleSpeed(0.005)
+            .onNodeClick(node => {
+              activeConceptId = node.id;
+
+              // Center camera smoothly onto the clicked node
+              graphInstance.centerAt(node.x, node.y, 500);
+              graphInstance.zoom(2.2, 500);
+
+              // Load concept into workspace
+              htmx.ajax('GET', `/concept?id=${node.id}`, {target: '#workspace'});
+              closeGraphModal();
+            });
+
+          // If an active concept exists, auto-center on it once simulation stabilizes
+          if (activeConceptId) {
+            setTimeout(() => {
+              const targetNode = data.nodes.find(n => n.id === activeConceptId);
+              if (targetNode && targetNode.x !== undefined) {
+                graphInstance.centerAt(targetNode.x, targetNode.y, 600);
+                graphInstance.zoom(2.2, 600);
+              }
+            }, 400);
+          }
+        })
+        .catch(err => console.error("Failed to load graph data:", err));
+    }
+
+    function closeGraphModal() {
+      const modal = document.getElementById('graph-modal');
+      modal.style.display = 'none';
+    } 
+  </script>
+</body>
+
+</html>
