@@ -155,7 +155,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 
 		case "read_concept":
 			var conceptID string
-			if val, ok := callParams.Arguments["concept_Id"]; ok && val != nil {
+			if val, ok := callParams.Arguments["concept_id"]; ok && val != nil {
 				conceptID = fmt.Sprintf("%v", val)
 			}
 			concept, ok := s.store.GetConceptView(conceptID)
