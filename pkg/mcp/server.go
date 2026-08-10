@@ -68,7 +68,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 			"tools": []map[string]any{
 				{
 					"name":        "search_knowledge",
-					"description": "Search OKF v0.2 knowledge corpus by keyword query",
+					"description": "Search OKF v0.2 knowledge corpus by keyword query with optional tier and type filters",
 					"inputSchema": map[string]any{
 						"type": "object",
 						"properties": map[string]any{
@@ -76,19 +76,35 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 								"type":        "string",
 								"description": "Search keyword query",
 							},
+							"tier": map[string]any{
+								"type":        "string",
+								"description": "Filter by trust tier: all, human, machine, unverified",
+								"enum":        []string{"all", "human", "machine", "unverified"},
+								"default":     "all",
+							},
+							"concept_type": map[string]any{
+								"type":        "string",
+								"description": "Filter by concept type e.g. BigQuery Table, Matric, Playbook",
+								"default":     "all",
+							},
 						},
 						"required": []string{"query"},
 					},
 				},
 				{
 					"name":        "read_concept",
-					"description": "Read a complete OKF v0.2 concept by Concept ID including metadata and body",
+					"description": "Read a complete OKF v0.2 concept by Concept ID including metadata, body, links, and optional source of truth inspection",
 					"inputSchema": map[string]any{
 						"type": "object",
 						"properties": map[string]any{
 							"concept_id": map[string]any{
 								"type":        "string",
 								"description": "e.g. concept/customer_oreders",
+							},
+							"include_source_truth": map[string]any{
+								"type":        "boolean",
+								"description": "If true, automatically attaches source inspection data for concept.Frontmatter.Resource",
+								"default":     false,
 							},
 						},
 						"required": []string{"concept_id"},
@@ -123,6 +139,36 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 								"type":        "string",
 								"description": "Agent producer string, e.g. claude-3-5-sonnet/v1",
 							},
+							"resource": map[string]any{
+								"type":        "string",
+								"description": "Caconical asset URI (bq://, postgresql://, gdrive://, gs://)",
+							},
+							"tags": map[string]any{
+								"type":  "array",
+								"items": map[string]any{"type": "string"},
+							},
+							"status": map[string]any{
+								"type":    "string",
+								"enum":    []string{"draft", "stable", "deprecated"},
+								"default": "draft",
+							},
+							"stale_after": map[string]any{
+								"type":        "string",
+								"description": "YYYY-MM-DD date string",
+							},
+							"sources": map[string]any{
+								"type": "array",
+								"items": map[string]any{
+									"type": "object",
+									"properties": map[string]any{
+										"id":       map[string]any{"type": "string"},
+										"resource": map[string]any{"type": "string"},
+										"title":    map[string]any{"type": "string"},
+										"author":   map[string]any{"type": "string"},
+									},
+								},
+								"required": []string{"id", "resource"},
+							},
 						},
 						"required": []string{"concept_id", "type", "title", "body", "agent_id"},
 					},
@@ -156,11 +202,20 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 
 		switch callParams.Name {
 		case "search_knowledge":
-			var q string
+			var q, tier, conceptType string
 			if val, ok := callParams.Arguments["query"]; ok && val != nil {
 				q = fmt.Sprintf("%v", val)
 			}
-			results := s.store.Search(q)
+
+			if val, ok := callParams.Arguments["tier"]; ok && val != nil {
+				tier = fmt.Sprintf("%v", val)
+			}
+
+			if val, ok := callParams.Arguments["concept_type"]; ok && val != nil {
+				conceptType = fmt.Sprintf("%v", val)
+			}
+
+			results := s.store.SearchFiltered(q, tier, conceptType)
 			resp.Result = map[string]any{
 				"content": []map[string]any{
 					{"type": "text", "text": marshalJSON(results)},
@@ -179,9 +234,50 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				}
 				break
 			}
+
+			respMap := map[string]any{
+				"concept": concept,
+			}
+
+			includeSourceTruth := false
+			if val, ok := callParams.Arguments["include_source_truth"]; ok && val != nil {
+				if b, ok := val.(bool); ok {
+					includeSourceTruth = b
+				}
+			}
+
+			if includeSourceTruth && s.simulator != nil {
+				var inspections []*sourcetruth.Inspection
+				visitedURIs := make(map[string]bool)
+
+				addInspection := func(uri string) {
+					if uri == "" || visitedURIs[uri] {
+						return
+					}
+
+					visitedURIs[uri] = true
+					if insp, err := s.simulator.Inspect(uri); err != nil {
+						if len(insp.TextSnippet) > 500 {
+							insp.TextSnippet = insp.TextSnippet[:500] + "\n... [Truncated for multi-source]"
+						}
+						inspections = append(inspections, insp)
+					}
+				}
+
+				// 1. Inspect Caconical Resource if present
+				addInspection(concept.Frontmatter.Resource)
+
+				// 2. Inspect All Upstream Provence Sources
+				for _, src := range concept.Frontmatter.Sources {
+					addInspection(src.Resource)
+				}
+
+				respMap["source_truth_inspections"] = inspections
+			}
+
 			resp.Result = map[string]any{
 				"concept": []map[string]any{
-					{"type": "text", "text": marshalJSON(concept)},
+					{"type": "text", "text": marshalJSON(respMap)},
 				},
 			}
 
@@ -193,11 +289,43 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 			body, _ := callParams.Arguments["body"].(string)
 			agentID, _ := callParams.Arguments["agent_id"].(string)
 
+			resource, _ := callParams.Arguments["resource"].(string)
+			status, _ := callParams.Arguments["status"].(string)
+			if status == "" {
+				status = "draft"
+			}
+			staleAfter, _ := callParams.Arguments["stale_after"].(string)
+
+			var tags []string
+			if tagsRow, ok := callParams.Arguments["tags"].([]any); ok {
+				for _, t := range tagsRow {
+					tags = append(tags, fmt.Sprintf("%v", t))
+				}
+			}
+
+			var sources []okf.Source
+			if sourcesRaw, ok := callParams.Arguments["sources"].([]any); ok {
+				for _, sRaw := range sourcesRaw {
+					if sMap, ok := sRaw.(map[string]any); ok {
+						sources = append(sources, okf.Source{
+							ID:       fmt.Sprintf("%v", sMap["id"]),
+							Resource: fmt.Sprintf("%v", sMap["resource"]),
+							Title:    fmt.Sprintf("%v", sMap["title"]),
+							Author:   okf.Actor(fmt.Sprintf("%v", sMap["author"])),
+						})
+					}
+				}
+			}
+
 			fm := okf.Frontmatter{
 				Type:        conceptType,
 				Title:       title,
 				Description: description,
+				Resource:    resource,
 				Status:      "draft",
+				Tags:        tags,
+				StaleAfter:  staleAfter,
+				Sources:     []okf.Source{},
 				Generated: &okf.Generated{
 					By: okf.Actor(agentID),
 					At: time.Now(),
