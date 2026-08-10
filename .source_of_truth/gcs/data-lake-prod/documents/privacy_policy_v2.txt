@@ -1,0 +1,18 @@
+================================================================================
+ENTERPRISE DATA PRIVACY & COMPLIANCE POLICY (v2.0)
+Storage Path: gs://data-lake-prod/documents/privacy_policy_v2.pdf
+Effective Date: July 20, 2026
+Owner: Legal & Compliance Operations
+================================================================================
+
+1. DATA CLASSIFICATION
+--------------------------------------------------------------------------------
+- Tier 1 (Public): Non-sensitive marketing materials, product catalog prices.
+- Tier 2 (Internal): Aggregated order metrics, anonymized customer profiles.
+- Tier 3 (Restricted): Customer PII (Email, Phone, Payment Tokens).
+
+2. RETENTION WINDOWS
+--------------------------------------------------------------------------------
+- Transaction Records: Retained in BigQuery sales.customer_orders for 7 years.
+- Customer Demographics: Retained in PostgreSQL billing.subscription_plans as long
+  as account status is ACTIVE. Deleted 90 days after account termination.

@@ -1,0 +1,26 @@
+================================================================================
+FINANCE REVENUE ACCOUNTING PRINCIPLES (v2026.1)
+Document ID: DOC-FIN-2026-MRR
+Owner: Finance & Revenue Operations Team (finance-team@enterprise.com)
+Last Revised: 2026-06-15
+================================================================================
+
+1. EXECUTIVE SUMMARY & MRR DEFINITION
+--------------------------------------------------------------------------------
+Monthly Recurring Revenue (MRR) represents the normalized monthly subscription fee
+contracted by active customer accounts. It excludes one-time setup fees, usage-based
+overage charges, and taxes.
+
+2. FORMULA & COMPUTATION RULES
+--------------------------------------------------------------------------------
+For any active customer subscription plan i:
+  MRR_i = (Contract Value USD) / (Contract Duration in Months)
+
+Gross MRR = SUM(MRR_i for all active plans)
+Net MRR = Gross MRR + Expansion MRR - Contraction MRR - Churn MRR
+
+3. DATA SOURCES & LINEAGE
+--------------------------------------------------------------------------------
+- Active subscriptions are queried from PostgreSQL table: billing.subscription_plans
+- Transaction payment receipts are verified in BigQuery table: enterprise.sales.orders
+- Customer tier metadata is joined via API Endpoint: /v1/customers

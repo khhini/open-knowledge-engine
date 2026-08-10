@@ -1,0 +1,111 @@
+<div class="space-y-4 text-xs font-sans text-slate-300">
+  <!-- Asset Header & Type Badge -->
+  <div class="flex items-center justify-between p-3 rounded-lg bg-slate-900 border border-slate-800">
+    <div>
+      <div class="font-mono text-sm font-bold text-slate-100 flex items-center gap-2">
+        <span>{{ if .FileName }}{{ .FileName }}{{ else }}{{ .URI }}{{ end }}</span>
+      </div>
+      <span class="text-[11px] font-mono text-cyan-400 block mt-0.5">{{ .URI }}</span>
+    </div>
+    <span
+      class="px-2.5 py-1 rounded-md text-[11px] font-mono font-medium bg-cyan-950 text-cyan-300 border border-cyan-800">
+      {{ .AssetType }}
+    </span>
+  </div>
+
+  {{ if .Exists }}
+  <!-- Key Metadata Grid -->
+  <div class="grid grid-cols-2 gap-2 text-[11px]">
+    {{ if .Owner }}
+    <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-slate-500 block uppercase font-mono text-[10px]">Owner / Author</span>
+      <span class="font-mono text-slate-200 font-medium">{{ .Owner }}</span>
+    </div>
+    {{ end }}
+
+    {{ if .PageCount }}
+    <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-slate-500 block uppercase font-mono text-[10px]">Document Length</span>
+      <span class="font-mono text-slate-200 font-medium">{{ .PageCount }} Pages</span>
+    </div>
+    {{ end }}
+
+    {{ if .RowCount }}
+    <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-slate-500 block uppercase font-mono text-[10px]">Record Count</span>
+      <span class="font-mono text-slate-200 font-medium">{{ .RowCount }} Rows</span>
+    </div>
+    {{ end }}
+
+    {{ if .SizeBytes }}
+    <div class="p-2.5 rounded bg-slate-900/60 border border-slate-800">
+      <span class="text-slate-500 block uppercase font-mono text-[10px]">File Size</span>
+      <span class="font-mono text-slate-200 font-medium">{{ .SizeBytes }} bytes</span>
+    </div>
+    {{ end }}
+  </div>
+  {{ if .Summary }}
+  <!-- Document Summary -->
+  <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+    <h4 class="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-1">Document Summary</h4>
+    <p class="text-slate-300 leading-relaxed">{{ .Summary }}</p>
+  </div>
+  {{ end }}
+
+  {{ if .Columns }}
+  <!-- Columns / Schema Table -->
+  <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+    <h4 class="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">Columns & Schema</h4>
+    <div class="overflow-x-auto">
+      <table class="w-full text-left font-mono text-[11px]">
+        <thead>
+          <tr class="border-b border-slate-800 text-slate-400">
+            <th class="pb-1.5 font-semibold">Column Name</th>
+            <th class="pb-1.5 font-semibold">Type</th>
+            <th class="pb-1.5 font-semibold">Description</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-800/60 text-slate-300">
+          {{ range .Columns }}
+          <tr>
+            <td class="py-1 text-cyan-300 font-medium">{{ .Name }}</td>
+            <td class="py-1 text-slate-400">{{ .Type }}</td>
+            <td class="py-1 text-slate-500">{{ if .Description }}{{ .Description }}{{ else }}-{{ end }}</td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  {{ end }}
+
+
+  {{ if .TextSnippet }}
+  <!-- Content Preview Text Snippet -->
+  <div class="p-3 rounded-lg bg-slate-900/80 border border-slate-800">
+    <h4 class="text-[11px] font-mono font-bold text-slate-400 uppercase tracking-wider mb-2">Content Preview Snippet
+    </h4>
+    <pre
+      class="font-mono text-[11px] p-3 rounded bg-slate-950 text-slate-300 overflow-x-auto whitespace-pre-wrap leading-relaxed border border-slate-800">
+      {{ .TextSnippet }}</pre>
+  </div>
+  {{ end }}
+
+  <!-- Open Asset Link -->
+  <div class="pt-2 flex justify-end">
+    <a href="{{ .URI }}" target="_blank" rel="noopener noreferrer"
+      class="px-4 py-2 rounded-md bg-cyan-600 hover:bg-cyan-500 text-white font-medium text-xs transition-colors flex items-center gap-1.5 shadow-lg">
+      <span>Open Source Asset</span>
+      <span>↗</span>
+    </a>
+  </div>
+
+  {{ else }}
+  <!-- Asset Error / Not Found State -->
+  <div class="p-4 rounded-lg bg-red-950/40 border border-red-900/60 text-red-300 text-xs">
+    <div class="font-bold font-mono mb-1">⚠️ Simulation Asset Not Found</div>
+    <p class="text-slate-400">{{ .ErrorMessage }}</p>
+    <div class="mt-2 font-mono text-[10px] text-slate-500">Expected Simulator Path: {{ .LocalPath }}</div>
+  </div>
+  {{ end }}
+</div>

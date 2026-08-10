@@ -1,0 +1,13 @@
+{
+  "asset_type": "Google Cloud Storage Object",
+  "bucket": "data-lake-prod",
+  "object_key": "documents/privacy_policy_v2.pdf",
+  "gs_uri": "gs://data-lake-prod/documents/privacy_policy_v2.pdf",
+  "mime_type": "application/pdf",
+  "size_bytes": 1820400,
+  "last_modified": "2026-07-20T11:15:00Z",
+  "storage_class": "STANDARD",
+  "owner": "team:legal-ops",
+  "document_summary": "Enterprise Customer Data Privacy Policy & Compliance Rules regarding PII encryption, retention windows, and deletion workflows.",
+  "page_count": 8
+}

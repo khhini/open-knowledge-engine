@@ -1,0 +1,13 @@
+{
+  "asset_type": "Google Spreadsheet / CSV",
+  "file_id": "9Z8Y7X6W5V4U3T2S1R0Q",
+  "name": "q3_subscription_billing_report.csv",
+  "mime_type": "text/csv",
+  "size_bytes": 1048576,
+  "drive_path": "Drive/Analytics/Quarterly Reports/q3_subscription_billing_report.csv",
+  "web_view_link": "https://docs.google.com/spreadsheets/d/9Z8Y7X6W5V4U3T2S1R0Q/edit",
+  "owner": "human:analytics-team",
+  "last_modified": "2026-08-01T14:20:00Z",
+  "row_count": 520,
+  "columns": ["subscription_id", "customer_id", "plan_tier", "monthly_rate_usd", "status", "billing_cycle"]
+}

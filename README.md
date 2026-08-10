@@ -4,6 +4,8 @@ An open-spec, high-performance knowledge management and human-AI collaboration p
 
 Built with a text-native, zero-database architecture in **Go**, **htmx**, **UnoCSS**, and **Goldmark**, this platform bridges human readability (Markdown + YAML frontmatter) with machine rigor (provenance, attestation, and dynamic trust signals).
 
+For planned features, upcoming enhancements, and the product roadmap, see [PLANNED.md](PLANNED.md).
+
 ---
 
 ## Key Capabilities

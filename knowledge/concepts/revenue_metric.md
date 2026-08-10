@@ -2,6 +2,7 @@
 type: Metric
 title: Monthly Recurring Revenue (MRR)
 description: Standardized metric definition for calculating monthly recurring revenue across subscriptions.
+resource: https://drive.google.com/file/d/1A2B3C4D5E6F7G8H9I0J/view
 tags: [metrics, finance, revenue]
 generated:
   by: reference_agent/gemini-2.5-pro
@@ -12,6 +13,11 @@ sources:
     title: Finance Revenue Accounting Principles
     author: human:finance-team
     usage_count: 8900
+  - id: quarterly-billing-sheet
+    resource: https://docs.google.com/spreadsheets/d/9Z8Y7X6W5V4U3T2S1R0Q/edit
+    title: Q3 Subscription Billing Report
+    author: human:analytics-team
+    usage_count: 5200
 status: stable
 ---
 

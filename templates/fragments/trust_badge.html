@@ -1,5 +1,4 @@
-<div id="trust-badge-{{ .ID }}"
-  class="flex items-center gap-3 p-4 rounded-lg bg-slate-900 border border-slate-800 my-4">
+<div class="trust-badge-container flex items-center gap-3 p-4 rounded-lg bg-slate-900 border border-slate-800 my-4">
   <div class="flex flex-col">
     <span class="text-xs text-slate-400 uppercase font-semibold">Trust Tier</span>
     <span
@@ -9,7 +8,7 @@
   </div>
 
   {{ if ne .TrustTier "Human-Reviewed" }}
-  <button hx-post="/concept/verify?id={{ .ID }}" hx-target="#trust-badge-{{ .ID }}" hx-swap="outerHTML"
+  <button hx-post="/concept/verify?id={{ .ID }}" hx-target="closest .trust-badge-container" hx-swap="outerHTML"
     class="ml-auto text-xs px-3 py-1.5 rounded-md font-medium bg-cyan-600 hover:bg-cyan-500 text-white transition-colors cursor-pointer">
     Verify as Human
   </button>

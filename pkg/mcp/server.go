@@ -9,19 +9,22 @@ import (
 	"time"
 
 	"github.com/khhini/open-knowledge-engine.git/pkg/okf"
+	"github.com/khhini/open-knowledge-engine.git/pkg/sourcetruth"
 	"github.com/khhini/open-knowledge-engine.git/pkg/store"
 	"gopkg.in/yaml.v3"
 )
 
 type MCPServer struct {
-	store   *store.MemoryStore
-	baseDir string
+	store     *store.MemoryStore
+	baseDir   string
+	simulator *sourcetruth.Simulator
 }
 
-func NewMCPServer(store *store.MemoryStore, baseDir string) *MCPServer {
+func NewMCPServer(store *store.MemoryStore, baseDir string, simulator *sourcetruth.Simulator) *MCPServer {
 	return &MCPServer{
-		store:   store,
-		baseDir: baseDir,
+		store:     store,
+		baseDir:   baseDir,
+		simulator: simulator,
 	}
 }
 
@@ -124,6 +127,17 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 						"required": []string{"concept_id", "type", "title", "body", "agent_id"},
 					},
 				},
+				{
+					"name":        "inspect_source_of_truth",
+					"description": "Inspect technical meatadata, document text snippets, spreadsheet columns, and local simulation files for an external source URI",
+					"inputSchema": map[string]any{
+						"uri": map[string]any{
+							"type":        "string",
+							"description": "Canonical asset URI or source URI (e.g. gdrive://, gs://, https://drive.google.com/file/...)",
+						},
+					},
+					"required": []string{"uri"},
+				},
 			},
 		}
 
@@ -209,6 +223,23 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				},
 			}
 
+		case "inspect_source_of_truth":
+			var uri string
+			if val, ok := callParams.Arguments["uri"]; ok && val != nil {
+				uri = fmt.Sprintf("%v", val)
+			}
+
+			inspection, err := s.simulator.Inspect(uri)
+			if err != nil {
+				resp.Error = map[string]any{"code": -32603, "message": err.Error()}
+				break
+			}
+
+			resp.Result = map[string]any{
+				"inspection": []map[string]any{
+					{"type": "text", "text": marshalJSON(inspection)},
+				},
+			}
 		default:
 			resp.Error = map[string]any{"code": -32601, "message": fmt.Sprintf("Tool '%s' not found", callParams.Name)}
 		}

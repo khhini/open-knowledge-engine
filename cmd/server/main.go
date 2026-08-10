@@ -10,6 +10,7 @@ import (
 
 	"github.com/khhini/open-knowledge-engine.git/pkg/mcp"
 	"github.com/khhini/open-knowledge-engine.git/pkg/okf"
+	"github.com/khhini/open-knowledge-engine.git/pkg/sourcetruth"
 	"github.com/khhini/open-knowledge-engine.git/pkg/store"
 	"github.com/khhini/open-knowledge-engine.git/pkg/watcher"
 	"github.com/khhini/open-knowledge-engine.git/templates"
@@ -18,7 +19,8 @@ import (
 func main() {
 	knowledgeDir := "./knowledge"
 	memStore := store.NewMemoryStore(knowledgeDir)
-	mcpServer := mcp.NewMCPServer(memStore, knowledgeDir)
+	simulator := sourcetruth.NewSimulator(".source_of_truth")
+	mcpServer := mcp.NewMCPServer(memStore, knowledgeDir, simulator)
 
 	if err := memStore.LoadAll(); err != nil {
 		log.Fatalf("Failed to load knowledge bundle: %v", err)
@@ -208,6 +210,20 @@ func main() {
 
 		w.Header().Set("Content-Type", "application/json")
 		if err := json.NewEncoder(w).Encode(GraphData{Nodes: nodes, Links: links}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		}
+	})
+
+	http.HandleFunc("/api/source-truth/inspect", func(w http.ResponseWriter, r *http.Request) {
+		uri := r.URL.Query().Get("uri")
+		inspection, err := simulator.Inspect(uri)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if err := tmpl.ExecuteTemplate(w, "source_inspector.html", inspection); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
 	})
