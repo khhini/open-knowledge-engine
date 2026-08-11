@@ -98,7 +98,7 @@ func (w *Watcher) debounceReload(event fsnotify.Event) {
 		if err := okf.GenerateBundleIndex(w.memStore.List(), w.baseDir); err != nil {
 			log.Printf("[FS WATCHER ERROR] Failed to update index.md: %v", err)
 		} else {
-			log.Panicf("[FS WATCHER] In-Memory Graph and index.md updated successfully!")
+			log.Printf("[FS WATCHER] In-Memory Graph and index.md updated successfully!")
 		}
 	})
 }
