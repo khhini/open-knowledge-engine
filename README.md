@@ -16,6 +16,19 @@ For planned features, upcoming enhancements, and the product roadmap, see [PLANN
 
 ---
 
+## 🛠️ Technology Stack
+
+| Layer / Category | Technology | Description |
+| :--- | :--- | :--- |
+| **Knowledge Spec** | **Open Knowledge Format (OKF v0.2)** | Open text-native specification defining Markdown + YAML frontmatter with 5 metadata families (Identity, Provenance, Trust, Lifecycle, Attestation) and reserved documents (`index.md`, `log.md`). |
+| **Backend Core** | **Go (Golang 1.22+)** | Zero-framework core server, HTTP router (`net/http`), and template engine (`html/template`). |
+| **Data Engine** | **Thread-Safe In-Memory Store** | Zero-database architecture with in-memory graph indexer, search engine, and `[[wikilinks]]` parser. |
+| **Agent Protocol** | **MCP JSON-RPC 2.0 Engine** | Native 9-tool Model Context Protocol server supporting `stdio`, HTTP (`/mcp`), and SSE streaming (`/mcp/sse`). |
+| **Agent Skills** | **Open Agent Skills Protocol** | Interoperable skill manifests (`.agents/skills/local-file-ingestor`) for Claude Code, Cursor, Windsurf, and `agy`. |
+| **Frontend UI** | **htmx 1.9.10** | Dynamic HTML-over-the-wire UI updates for live search, sidebar filters, inspector drawers, and verification badges. |
+| **Styling & Theme** | **UnoCSS & Tailwind Reset** | Instant runtime utility CSS engine providing dark-themed, responsive enterprise workspace styling. |
+---
+
 ## Key Capabilities
 
 ### 1. OKF v0.2 Specification Compliance
@@ -75,6 +88,7 @@ Computes credibility at read-time instead of storing static scores:
 - Real-time filtering by keyword query, **Trust Tier** (Human, Machine, Unverified), and **Concept Type** (`BigQuery Table`, `PostgreSQL Table`, `Metric`, `Policy`, `API Endpoint`, `Playbook`, `dbt Model`, `Data Pipeline`, `Kafka Topic`, `ML Feature Store`, `Data Contract`).
 
 ---
+
 
 ## 🏛️ System Architecture
 
