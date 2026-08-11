@@ -76,11 +76,17 @@ Computes credibility at read-time instead of storing static scores:
 │   └── server/
 │       └── main.go              # Server routing, flag parsing, and HTTP handlers
 ├── docs/
-│   └── LOCAL_FILE_INGESTION_SKILLS_SPEC.md # Spec for Local File Ingestion Agent Skills
-├── .gemini/
+│   ├── LOCAL_FILE_INGESTION_SKILLS_SPEC.md # Spec for Local File Ingestion Agent Skills
+│   ├── SOURCE_OF_TRUTH_LOCAL_SIMULATION_SPEC.md # Spec for Source of Truth Simulation
+│   └── MCP_EXPANSION_SPEC.md     # Spec for Model Context Protocol Expansion
+├── .agents/
 │   └── skills/
 │       └── local-file-ingestor/
-│           └── SKILL.md         # Registered Antigravity Agent Skill for Local File Ingestion
+│           └── SKILL.md         # Open Agent Skill for Local File Ingestion
+├── examples/
+│   └── skills/
+│       └── local-file-ingestor/
+│           └── SKILL.md         # Reference Skill Template
 ├── pkg/
 │   ├── okf/
 │   │   ├── spec.go              # OKF v0.2 structs & actor conventions
@@ -100,6 +106,7 @@ Computes credibility at read-time instead of storing static scores:
 │   └── watcher/
 │       └── watcher.go           # Real-time fsnotify file watcher with debouncing
 ├── .source_of_truth/            # Local File Storage Simulator Corpus
+│   ├── local_samples/           # Local multi-concept documents & meeting notes
 │   ├── bigquery/                # BigQuery mock table schemas & sample CSVs
 │   ├── postgres/                # PostgreSQL DDL table schemas
 │   ├── apis/                    # OpenAPI 3.0 microservice REST specs
@@ -124,7 +131,13 @@ Computes credibility at read-time instead of storing static scores:
         ├── revenue_metric.md
         ├── subscription_plans.md
         ├── fraud_detector.md
-        └── data_retention_policy.md
+        ├── data_retention_policy.md
+        ├── dbt_orders_mart.md
+        ├── order_fulfillment_pipeline.md
+        ├── real_time_checkout_events.md
+        ├── customer_churn_feature_set.md
+        ├── contract_checkout_events.md
+        └── source_of_truth_local_simulation_spec.md
 ```
 
 ---
