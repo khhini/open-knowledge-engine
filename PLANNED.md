@@ -92,6 +92,7 @@ timeline
 ### Phase 1: Core Tooling & Verification (Short-Term)
 - [x] Implement expanded MCP tools (`update_concept`, `verify_concept`, `traverse_graph`, `get_backlinks`, `list_broken_links`).
 - [x] Implement HTTP Server-Sent Events (SSE) streaming transport (`/mcp/sse`).
+- [x] Implement Local File Ingestion Agent Skill (`.gemini/skills/local-file-ingestor/SKILL.md`) with multi-concept decomposition & dynamic type discovery.
 - [ ] Build `okf lint` CLI validation tool.
 - [ ] Support dynamic user identity attribution in human verification flow.
 

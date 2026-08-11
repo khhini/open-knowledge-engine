@@ -49,17 +49,22 @@ Computes credibility at read-time instead of storing static scores:
 - **Local File Store Simulator (`.source_of_truth/`)**: Simulates external document storage (Google Drive, Cloud Storage GCS, AWS S3, local file shares) holding PDFs, Google Docs, Spreadsheets, and CSVs without requiring cloud tokens during local dev/testing.
 - **Interactive HTMX Document Inspector Drawer**: Side drawer allowing humans to inspect document summaries, page counts, owner badges, spreadsheet column schemas, and text snippets.
 
-### 6. Interactive 2D Knowledge Graph Visualizer
+### 6. Local File Ingestion Agent Skill
+- **Semantic Content Extraction**: AI agents read local files (`.pdf`, `.csv`, `.md`, `.sql`, `.yaml`) via `inspect_source_of_truth` and extract domain entities based on semantic meaning rather than raw filenames.
+- **Multi-Concept Decomposition**: Monolithic local files are decomposed into $N$ atomic OKF concepts, preserving shared parent file lineage (`resource: file:///...`).
+- **Dynamic Concept Type Discovery**: Automatically identifies and registers novel concept types (`Kafka Topic`, `ML Feature Store`, `Data Contract`), dynamically populating the Web UI sidebar filters.
+
+### 7. Interactive 2D Knowledge Graph Visualizer
 - Force-directed graph canvas modal (`force-graph` + UnoCSS).
 - Color-coded nodes by **Trust Tier**.
 - Smoothly centers, zooms, and highlights the currently active concept with a glowing cyan ring.
 
-### 7. Real-Time Hot-Reload File Watcher (`fsnotify`)
+### 8. Real-Time Hot-Reload File Watcher (`fsnotify`)
 - Recursively monitors the `knowledge/` directory for `.md` file edits from Git (`git pull`), Obsidian, text editors, or AI agents.
 - Automatically re-indexes the memory store and updates `index.md` in real-time without server restarts.
 
-### 8. Dynamic Sidebar Filters
-- Real-time filtering by keyword query, **Trust Tier** (Human, Machine, Unverified), and **Concept Type** (`BigQuery Table`, `PostgreSQL Table`, `Metric`, `Policy`, `API Endpoint`, `Playbook`).
+### 9. Dynamic Sidebar Filters
+- Real-time filtering by keyword query, **Trust Tier** (Human, Machine, Unverified), and **Concept Type** (`BigQuery Table`, `PostgreSQL Table`, `Metric`, `Policy`, `API Endpoint`, `Playbook`, `dbt Model`, `Data Pipeline`, `Kafka Topic`, `ML Feature Store`, `Data Contract`).
 
 ---
 
@@ -70,6 +75,12 @@ Computes credibility at read-time instead of storing static scores:
 ├── cmd/
 │   └── server/
 │       └── main.go              # Server routing, flag parsing, and HTTP handlers
+├── docs/
+│   └── LOCAL_FILE_INGESTION_SKILLS_SPEC.md # Spec for Local File Ingestion Agent Skills
+├── .gemini/
+│   └── skills/
+│       └── local-file-ingestor/
+│           └── SKILL.md         # Registered Antigravity Agent Skill for Local File Ingestion
 ├── pkg/
 │   ├── okf/
 │   │   ├── spec.go              # OKF v0.2 structs & actor conventions
@@ -89,6 +100,10 @@ Computes credibility at read-time instead of storing static scores:
 │   └── watcher/
 │       └── watcher.go           # Real-time fsnotify file watcher with debouncing
 ├── .source_of_truth/            # Local File Storage Simulator Corpus
+│   ├── bigquery/                # BigQuery mock table schemas & sample CSVs
+│   ├── postgres/                # PostgreSQL DDL table schemas
+│   ├── apis/                    # OpenAPI 3.0 microservice REST specs
+│   ├── dbt/                     # dbt SQL transformation models
 │   ├── gdrive/                  # Google Drive PDF & Spreadsheet mock files
 │   ├── gcs/                     # Google Cloud Storage mock objects
 │   └── s3/                      # AWS S3 mock exports
