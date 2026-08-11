@@ -1,8 +1,16 @@
 # Enterprise Open Knowledge Engine (OKF v0.2)
 
-An open-spec, high-performance knowledge management and human-AI collaboration platform implementing **Open Knowledge Format (OKF) v0.2**.
+An open-spec, high-performance knowledge graph and human-AI collaboration platform implementing **Open Knowledge Format (OKF) v0.2**.
 
-Built with a text-native, zero-database architecture in **Go**, **htmx**, **UnoCSS**, and **Goldmark**, this platform bridges human readability (Markdown + YAML frontmatter) with machine rigor (provenance, attestation, and dynamic trust signals).
+Built with a text-native, zero-database architecture in **Go**, **htmx**, **UnoCSS**, and **Goldmark**, the platform bridges human readability (Markdown + YAML frontmatter) with machine rigor (provenance, attestation, dynamic trust signals, and MCP tool protocols).
+
+### 🌟 Executive Summary & Enterprise Pillars
+
+1. **Human & Machine Collaboration**: Bridges human domain knowledge with AI agent execution through dynamic **Trust Tier** scoring (Human-Reviewed, Machine-Confirmed, Stale, Unverified), verification receipts, and computational attestations.
+2. **Model Context Protocol (MCP) Engine**: Features a 9-tool JSON-RPC 2.0 MCP server over standard input/output (`-mcp-stdio`) and HTTP Server-Sent Events (`/mcp/sse`) enabling seamless integration with AI agents (Claude Code, Cursor, Windsurf, `agy`, or custom subagents).
+3. **Source of Truth Simulation**: Includes a local file storage simulator (`.source_of_truth/`) allowing humans and agents to inspect external technical assets (Google Drive PDFs, Google Sheets, GCS objects, BigQuery schemas, PostgreSQL DDLs, OpenAPI specs, and dbt models) without cloud credentials during local dev and testing.
+4. **Open Agent Ingestion Skills**: Implements standard Open Agent Skills ([`.agents/skills/local-file-ingestor/SKILL.md`](.agents/skills/local-file-ingestor/SKILL.md)) enabling autonomous LLM agents to inspect local documents, semantically extract domain entities, decompose monolithic files into atomic concepts, and dynamically discover novel concept types (`Kafka Topic`, `ML Feature Store`, `Data Contract`).
+5. **Bidirectional Knowledge Graph**: Automatically parses `[[wikilinks]]`, renders interactive 2D force-directed graph visualizers, and provides real-time hot-reloading via `fsnotify`.
 
 For planned features, upcoming enhancements, and the product roadmap, see [PLANNED.md](PLANNED.md).
 
@@ -170,21 +178,32 @@ Open your browser at `http://localhost:8080` to access the interactive platform.
 
 ### Connecting to LLM AI Agents (MCP Mode)
 
-To run the MCP server over standard input/output (`stdio`) for CLI agents like `agy` or Claude Desktop:
+When the server is running (`go run cmd/server/main.go`), LLM agents (Claude Code, Cursor, Windsurf, `agy`, or custom subagents) connect to the MCP server via HTTP or SSE endpoints:
 
-```bash
-go run cmd/server/main.go -mcp-stdio
-```
+- **HTTP JSON-RPC Endpoint**: `http://localhost:8080/mcp`
+- **HTTP Server-Sent Events (SSE) Endpoint**: `http://localhost:8080/mcp/sse`
 
 #### MCP Plugin Config (`mcp_config.json`)
 
+**HTTP Transport Example:**
 ```json
 {
   "mcpServers": {
     "okf-knowledge-engine": {
-      "command": "go",
-      "args": ["run", "cmd/server/main.go", "-mcp-stdio"],
-      "cwd": "/path/to/enterprise-open-knowledge-graph"
+      "url": "http://localhost:8080/mcp",
+      "transport": "http"
+    }
+  }
+}
+```
+
+**SSE Transport Example:**
+```json
+{
+  "mcpServers": {
+    "okf-knowledge-engine-sse": {
+      "url": "http://localhost:8080/mcp/sse",
+      "transport": "sse"
     }
   }
 }

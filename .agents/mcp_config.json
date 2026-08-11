@@ -1,7 +1,8 @@
 {
   "mcpServers": {
     "okf-knowledge-engine": {
-      "url": "http://localhost:8080/mcp"
+      "url": "http://localhost:8080/mcp",
+      "transport": "http"
     }
   }
 }
