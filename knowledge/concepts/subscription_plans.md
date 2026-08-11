@@ -2,7 +2,7 @@
 type: PostgreSQL Table
 title: Subscription Plans Table
 description: Primary relational store for customer subscription tiers and billing schedules.
-resource: postgresql://db.internal:5432/billing.subscription_plans
+resource: postgresql://db.internal:5432/billing/public/subscription_plans
 tags: [billing, subscriptions, postgres]
 generated:
   by: process:schema-migrator
@@ -16,6 +16,11 @@ sources:
     resource: https://git.internal/billing/migrations/004_plans.sql
     author: human:billing-devs
     usage_count: 18500
+  - id: mrr-spec-doc
+    resource: https://internal.docs/finance/mrr_spec.pdf
+    title: Finance Revenue Accounting Principles
+    author: human:finance-team
+    usage_count: 8900
 status: stable
 ---
 
@@ -36,3 +41,4 @@ Tracks recurring billing schedules, price points, and active lifecycle states fo
 
 - Revenue metrics computed from this table are defined in [[concepts/revenue_metric]].
 - Account owner details are queried from [[concepts/customer_profiles]].
+- Data retention rules are governed by [[concepts/data_retention_policy]].

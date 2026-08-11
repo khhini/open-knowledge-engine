@@ -1,0 +1,20 @@
+{
+  "asset_type": "BigQuery Table",
+  "project_id": "enterprise-prod",
+  "dataset_id": "sales",
+  "table_id": "customer_orders",
+  "partition_field": "placed_at",
+  "clustering_fields": ["customer_id"],
+  "total_rows": 14250000,
+  "total_bytes": 482910400,
+  "last_modified": "2026-08-10T18:30:00Z",
+  "owner": "team:analytics-eng",
+  "columns": [
+    { "name": "order_id", "type": "STRING", "nullable": false, "description": "Globally unique UUID order identifier" },
+    { "name": "customer_id", "type": "STRING", "nullable": false, "description": "Foreign key reference to customer_profiles" },
+    { "name": "total_usd", "type": "NUMERIC", "nullable": false, "description": "Total order transaction amount in USD" },
+    { "name": "placed_at", "type": "TIMESTAMP", "nullable": false, "description": "UTC timestamp when order was placed" },
+    { "name": "status", "type": "STRING", "nullable": false, "description": "COMPLETED, PENDING, CANCELLED, REFUNDED" },
+    { "name": "payment_method", "type": "STRING", "nullable": true, "description": "CREDIT_CARD, PAYPAL, STRIPE, APPLE_PAY" }
+  ]
+}

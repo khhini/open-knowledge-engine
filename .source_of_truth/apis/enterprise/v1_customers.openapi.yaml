@@ -1,0 +1,38 @@
+openapi: 3.0.3
+info:
+  title: Customer Profiles Microservice API
+  version: 1.2.0
+  description: Internal REST microservice providing customer identity, membership tier, and risk score lookup.
+paths:
+  /v1/customers/{customer_id}:
+    get:
+      summary: Retrieve Customer Profile
+      operationId: getCustomerById
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema:
+            type: string
+            example: cust_1001
+      responses:
+        '200':
+          description: Customer Profile Found
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  customer_id:
+                    type: string
+                  email:
+                    type: string
+                  plan_tier:
+                    type: string
+                    enum: [BASIC, PRO, ENTERPRISE]
+                  fraud_risk_score:
+                    type: number
+                    format: float
+                  created_at:
+                    type: string
+                    format: date-time

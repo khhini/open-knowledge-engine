@@ -2,7 +2,7 @@
 type: BigQuery Table
 title: Customer Orders Table
 description: Consolidated customer orders across all web and mobile sales channels.
-resource: https://console.cloud.google.com/bigquery?p=enterprise&d=sales&t=orders
+resource: bq://enterprise-prod.sales.customer_orders
 tags: [sales, revenue, analytics]
 generated:
   by: reference_agent/gemini-2.5-pro
@@ -14,6 +14,11 @@ sources:
     author: team:ga4-docs
     usage_count: 5200
     last_modified: 2026-06-15
+  - id: quarterly-billing-sheet
+    resource: https://docs.google.com/spreadsheets/d/9Z8Y7X6W5V4U3T2S1R0Q/edit
+    title: Q3 Subscription Billing Report
+    author: human:analytics-team
+    usage_count: 5200
 status: stable
 ---
 
@@ -34,3 +39,4 @@ The `customer_orders` table contains real-time transactional records for complet
 
 - Customer identity details are maintained in [[concepts/customer_profiles]].
 - In case of pipeline lag, follow [[concepts/freshness_playbook]].
+- Data retention schedules follow [[concepts/data_retention_policy]].

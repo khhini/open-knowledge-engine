@@ -7,7 +7,9 @@
 | [`concepts/customer_orders`](/concepts/customer_orders.md) | `BigQuery Table` | Customer Orders Table | **Unverified** | `stable` |
 | [`concepts/customer_profiles`](/concepts/customer_profiles.md) | `API Endpoint` | Customer Profiles API | **Human-Reviewed** | `stable` |
 | [`concepts/data_retention_policy`](/concepts/data_retention_policy.md) | `Policy` | GDPR Customer Data Retention Policy | **Human-Reviewed** | `stable` |
+| [`concepts/dbt_orders_mart`](/concepts/dbt_orders_mart.md) | `dbt Model` | Customer Orders Data Mart Model | **Unverified** | `stable` |
 | [`concepts/fraud_detector`](/concepts/fraud_detector.md) | `Attested Computation` | Transaction Fraud Risk Model | **Unverified** | `stable` |
 | [`concepts/freshness_playbook`](/concepts/freshness_playbook.md) | `Playbook` | Data Freshness Incident Response | **Human-Reviewed** | `stable` |
+| [`concepts/order_fulfillment_pipeline`](/concepts/order_fulfillment_pipeline.md) | `Data Pipeline` | Daily Order Fulfillment & Billing Sync Pipeline | **Human-Reviewed** | `stable` |
 | [`concepts/revenue_metric`](/concepts/revenue_metric.md) | `Metric` | Monthly Recurring Revenue (MRR) | **Unverified** | `stable` |
 | [`concepts/subscription_plans`](/concepts/subscription_plans.md) | `PostgreSQL Table` | Subscription Plans Table | **Human-Reviewed** | `stable` |
