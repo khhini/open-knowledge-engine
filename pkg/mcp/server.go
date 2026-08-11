@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/khhini/open-knowledge-engine.git/pkg/okf"
@@ -183,6 +185,149 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 						},
 					},
 					"required": []string{"uri"},
+				},
+				{
+					"name":        "update_concept",
+					"description": "Modify an existing OKF concept's frontmatter fields, replace body, or  append body content",
+					"inputSchema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"concept_id": map[string]any{
+								"type":        "string",
+								"description": "Concept ID e.g. concept/customer_oreders",
+							},
+							"agent_id": map[string]any{
+								"type":        "string",
+								"description": "Actor string identifying the modifying agent  e.g. agent:claude-3-5-sonnet/v1",
+							},
+							"body": map[string]any{
+								"type":        "string",
+								"description": "Full replacement markdown body content (replaces existing body)",
+							},
+							"append_body": map[string]any{
+								"type":        "string",
+								"description": "Markdown text to append to the existing body (ignored if 'body' is supplied)",
+							},
+							"frontmatter_updates": map[string]any{
+								"type":        "object",
+								"description": "Key-value pairs to update in YAML frontmatter",
+								"properties": map[string]any{
+
+									"type": map[string]any{
+										"type":        "string",
+										"description": "OKF Concept Type, e.g. Playbook",
+									},
+									"title": map[string]any{
+										"type": "string",
+									},
+									"description": map[string]any{
+										"type": "string",
+									},
+									"resource": map[string]any{
+										"type":        "string",
+										"description": "Caconical asset URI (bq://, postgresql://, gdrive://, gs://)",
+									},
+									"tags": map[string]any{
+										"type":  "array",
+										"items": map[string]any{"type": "string"},
+									},
+									"status": map[string]any{
+										"type":    "string",
+										"enum":    []string{"draft", "stable", "deprecated"},
+										"default": "draft",
+									},
+									"stale_after": map[string]any{
+										"type":        "string",
+										"description": "YYYY-MM-DD date string",
+									},
+									"sources": map[string]any{
+										"type": "array",
+										"items": map[string]any{
+											"type": "object",
+											"properties": map[string]any{
+												"id":       map[string]any{"type": "string"},
+												"resource": map[string]any{"type": "string"},
+												"title":    map[string]any{"type": "string"},
+												"author":   map[string]any{"type": "string"},
+											},
+										},
+										"required": []string{"id", "resource"},
+									},
+								},
+							},
+						},
+						"required": []string{"concept_id", "agent_id"},
+					},
+				},
+				{
+					"name":        "verify_concept",
+					"description": "Submit a machine or human attestation for a concept, prompting its Trust Tier",
+					"inputSchema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"concept_id": map[string]any{
+								"type":        "string",
+								"description": "Concept ID e.g. concept/revenue_metric",
+							},
+							"actor": map[string]any{
+								"type":        "string",
+								"description": "Actor identifier e.g. process:data-quality-bot or human:username",
+							},
+							"notes": map[string]any{
+								"type":        "string",
+								"description": "Verification notes or audit log entry text",
+							},
+						},
+						"required": []string{"concept_id", "actor"},
+					},
+				},
+				{
+					"name":        "get_backlinks",
+					"description": "Retrieve all incoming backlinks pointing to a concept ID",
+					"inputSchema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"concept_id": map[string]any{
+								"type":        "string",
+								"description": "Concept ID e.g. concept/revenue_metric",
+							},
+						},
+						"required": []string{"concept_id"},
+					},
+				},
+				{
+					"name":        "traverse_graph",
+					"description": "Traverse the knowledge graph N-hops starting from a root concept ID",
+					"inputSchema": map[string]any{
+						"type": "object",
+						"properties": map[string]any{
+							"root_concept_id": map[string]any{
+								"type":        "string",
+								"description": "Strarting concept Concept ID e.g. concept/revenue_metric",
+							},
+							"max_depth": map[string]any{
+								"type":        "integer",
+								"description": "Maxium grap traversal depth (default: 2, max: 4)",
+								"default":     2,
+							},
+							"direction": map[string]any{
+								"type":        "string",
+								"enum":        []string{"both", "outgoing", "incoming"},
+								"default":     "both",
+								"description": "Traversal direction: both, outgoing, or incoming",
+							},
+						},
+						"required": []string{"root_concept_id"},
+					},
+				},
+
+				{
+					"name":        "list_broken_links",
+					"description": "Scan the corpus for broken/dangling [[wikilinks]] pointing to  missing concepts",
+					"inputSchema": map[string]any{
+						"type":       "object",
+						"properties": map[string]any{},
+					},
 				},
 			},
 		}
@@ -368,12 +513,374 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 					{"type": "text", "text": marshalJSON(inspection)},
 				},
 			}
+
+		case "update_concept":
+			conceptID, _ := callParams.Arguments["concept_id"].(string)
+			agentID, _ := callParams.Arguments["agent_id"].(string)
+
+			fullPath := filepath.Join(s.baseDir, conceptID+".md")
+			contentBytes, err := os.ReadFile(fullPath)
+			if err != nil {
+				resp.Error = map[string]any{
+					"code":    -32602,
+					"message": fmt.Sprintf("Concept file '%s' not found: %v", conceptID, err),
+				}
+				break
+			}
+
+			// Split Frontmatter and Body
+			rawStr := string(contentBytes)
+			parts := strings.SplitN(rawStr, "---", 3)
+			var existingFM okf.Frontmatter
+			var existingBody string
+
+			if len(parts) >= 3 {
+				_ = yaml.Unmarshal([]byte(parts[1]), &existingFM)
+				existingBody = strings.TrimSpace(parts[2])
+			} else {
+				existingBody = strings.TrimSpace(rawStr)
+			}
+
+			if fmUpdates, ok := callParams.Arguments["frontmatter_updates"].(map[string]any); ok {
+				if val, ok := fmUpdates["type"].(string); ok && val != "" {
+					existingFM.Type = val
+				}
+
+				if val, ok := fmUpdates["title"].(string); ok && val != "" {
+					existingFM.Title = val
+				}
+
+				if val, ok := fmUpdates["description"].(string); ok && val != "" {
+					existingFM.Description = val
+				}
+
+				if val, ok := fmUpdates["status"].(string); ok && val != "" {
+					existingFM.Status = val
+				}
+
+				if val, ok := fmUpdates["resouce"].(string); ok && val != "" {
+					existingFM.Resource = val
+				}
+
+				if val, ok := fmUpdates["stale_after"].(string); ok && val != "" {
+					existingFM.StaleAfter = val
+				}
+				if tagsRaw, ok := fmUpdates["tags"].([]any); ok {
+					var newTags []string
+					for _, t := range tagsRaw {
+						newTags = append(newTags, fmt.Sprintf("%v", t))
+					}
+					existingFM.Tags = newTags
+				}
+				if sourcesRaw, ok := fmUpdates["sources"].([]any); ok {
+					var newSources []okf.Source
+					for _, sRaw := range sourcesRaw {
+						if sMap, ok := sRaw.(map[string]any); ok {
+							src := okf.Source{
+								ID:       fmt.Sprintf("%v", sMap["id"]),
+								Resource: fmt.Sprintf("%v", sMap["resource"]),
+							}
+							if t, ok := sMap["title"].(string); ok {
+								src.Title = t
+							}
+							if a, ok := sMap["author"].(string); ok {
+								src.Author = okf.Actor(a)
+							}
+							newSources = append(newSources, src)
+						}
+					}
+					existingFM.Sources = newSources
+				}
+			}
+
+			// Handle Body: 'body' (replace) va 'append_body' (append)
+			if replaceBody, ok := callParams.Arguments["body"].(string); ok && strings.TrimSpace(replaceBody) != "" {
+				existingBody = strings.TrimSpace(replaceBody)
+			} else if appendBody, ok := callParams.Arguments["append_body"].(string); ok && strings.TrimSpace(appendBody) != "" {
+				existingBody = existingBody + "\n\n" + strings.TrimSpace(appendBody)
+			}
+
+			// Re-serialize frontmatter and write to disk
+			yamlBytes, _ := yaml.Marshal((existingFM))
+			updatedContent := fmt.Sprintf("---\n%s---\n\n%s\n", string(yamlBytes), existingBody)
+
+			if err := os.WriteFile(fullPath, []byte(updatedContent), 0644); err != nil {
+				resp.Error = map[string]any{"code": -32603, "message": err.Error()}
+			}
+
+			_ = okf.AppendLogEntry(s.baseDir, okf.Actor(agentID), "UPDATED", conceptID, "Concept updated via MCP agent tool")
+
+			_ = s.store.LoadAll()
+
+			resp.Result = map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": fmt.Sprintf("Concept '%s' updated successfully.", conceptID)},
+				},
+			}
+
+		case "verify_concept":
+			conceptID, _ := callParams.Arguments["concept_id"].(string)
+			actorStr, _ := callParams.Arguments["actor"].(string)
+			notes, _ := callParams.Arguments["notes"].(string)
+
+			if notes == "" {
+				notes = "Attestation submitted via MCP agent tool"
+			}
+
+			fullPath := filepath.Join(s.baseDir, conceptID+".md")
+			contentBytes, err := os.ReadFile(fullPath)
+			if err != nil {
+				resp.Error = map[string]any{
+					"code":    -32602,
+					"message": fmt.Sprintf("Concept file '%s' not found: %v", conceptID, err),
+				}
+				break
+			}
+
+			rawStr := string(contentBytes)
+			parts := strings.SplitN(rawStr, "---", 3)
+			var existingFM okf.Frontmatter
+			var existingBody string
+
+			if len(parts) >= 3 {
+				_ = yaml.Unmarshal([]byte(parts[1]), &existingFM)
+				existingBody = strings.TrimSpace(parts[2])
+			} else {
+				existingBody = strings.TrimSpace(rawStr)
+			}
+
+			actor := okf.Actor(actorStr)
+			existingFM.Verified = append(existingFM.Verified, okf.Verification{
+				Actor: actor,
+				At:    time.Now(),
+				Notes: notes,
+			})
+
+			yamlBytes, _ := yaml.Marshal(existingFM)
+			updatedContent := fmt.Sprintf("---\n%s---\n\n%s\n", string(yamlBytes), existingBody)
+
+			if err := os.WriteFile(fullPath, []byte(updatedContent), 0644); err != nil {
+				resp.Error = map[string]any{"code": -32603, "message": err.Error()}
+				break
+			}
+
+			_ = okf.AppendLogEntry(s.baseDir, actor, "VERIFIED", conceptID, notes)
+			_ = s.store.LoadAll()
+
+			resp.Result = map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": fmt.Sprintf("Concept '%s' verified by '%s' successfully.", conceptID, actorStr)},
+				},
+			}
+
+		case "get_backlinks":
+			conceptID, _ := callParams.Arguments["concept_id"].(string)
+			conceptView, ok := s.store.GetConceptView(conceptID)
+
+			if !ok {
+				resp.Error = map[string]any{"code": -32602, "message": fmt.Sprintf("Concept '%s' not found", conceptID)}
+				break
+			}
+
+			type Backlink struct {
+				ID          string `json:"id"`
+				Title       string `json:"title"`
+				Type        string `json:"type"`
+				Description string `json:"description"`
+				TrustTier   string `json:"trust_tier"`
+			}
+
+			var backlinks []Backlink
+			for _, inc := range conceptView.IncomingLinks {
+				title := inc.Frontmatter.Title
+				if title == "" {
+					title = inc.ID
+				}
+
+				backlinks = append(backlinks, Backlink{
+					ID:          inc.ID,
+					Title:       title,
+					Type:        inc.Frontmatter.Type,
+					Description: inc.Frontmatter.Description,
+					TrustTier:   inc.TrustTier,
+				})
+			}
+
+			resp.Result = map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": marshalJSON(map[string]any{
+						"concept_id":  conceptID,
+						"backlinks":   backlinks,
+						"total_count": len(backlinks),
+					})},
+				},
+			}
+
+		case "traverse_graph":
+			rootID, _ := callParams.Arguments["root_content_id"].(string)
+			maxDepth := 2
+			if d, ok := callParams.Arguments["max_depth"].(float64); ok && d > 0 {
+				maxDepth = int(d)
+				if maxDepth > 4 {
+					maxDepth = 4
+				}
+			}
+
+			direction := "both"
+			if dir, ok := callParams.Arguments["direction"].(string); ok && dir != "" {
+				direction = dir
+			}
+
+			if _, ok := s.store.GetConceptView(rootID); !ok {
+				resp.Error = map[string]any{"code": -32602, "message": fmt.Sprintf("Root concept '%s' not found", rootID)}
+				break
+			}
+
+			type GraphNode struct {
+				ID        string `json:"id"`
+				Title     string `json:"title"`
+				Type      string `json:"type"`
+				TrustTier string `json:"trust_tier"`
+				Depth     int    `josn:"depth"`
+			}
+
+			type GraphEdge struct {
+				Source string `json:"source"`
+				Target string `json:"target"`
+			}
+
+			nodesMap := make(map[string]GraphNode)
+			edgesMap := make(map[string]GraphEdge)
+
+			type queueItem struct {
+				id    string
+				depth int
+			}
+
+			queue := []queueItem{{id: rootID, depth: 0}}
+
+			for len(queue) > 0 {
+				curr := queue[0]
+				queue = queue[1:]
+
+				view, ok := s.store.GetConceptView(curr.id)
+				if !ok {
+					continue
+				}
+
+				title := view.Concept.Frontmatter.Title
+				if title == "" {
+					title = view.Concept.ID
+				}
+
+				if _, exists := nodesMap[curr.id]; !exists {
+					nodesMap[curr.id] = GraphNode{
+						ID:        view.Concept.ID,
+						Title:     title,
+						Type:      view.Concept.Frontmatter.Type,
+						TrustTier: view.Concept.TrustTier,
+						Depth:     curr.depth,
+					}
+				}
+
+				if curr.depth >= maxDepth {
+					continue
+				}
+
+				if direction == "both" || direction == "outgoing" {
+					for _, out := range view.OutgoingLinks {
+						edgeKey := curr.id + "->" + out.ID
+						edgesMap[edgeKey] = GraphEdge{Source: curr.id, Target: out.ID}
+						if _, visited := nodesMap[out.ID]; !visited {
+							queue = append(queue, queueItem{id: out.ID, depth: curr.depth + 1})
+						}
+					}
+				}
+
+				if direction == "both" || direction == "incoming" {
+					for _, inc := range view.IncomingLinks {
+						edgeKey := inc.ID + "->" + curr.id
+						edgesMap[edgeKey] = GraphEdge{Source: inc.ID, Target: curr.id}
+						if _, visited := nodesMap[inc.ID]; !visited {
+							queue = append(queue, queueItem{id: inc.ID, depth: curr.depth + 1})
+						}
+					}
+				}
+			}
+
+			var nodeList []GraphNode
+			for _, n := range nodesMap {
+				nodeList = append(nodeList, n)
+			}
+
+			var edgeList []GraphEdge
+			for _, e := range edgesMap {
+				edgeList = append(edgeList, e)
+			}
+
+			resp.Result = map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": marshalJSON(map[string]any{
+						"root_concept_id": rootID,
+						"max_depth":       maxDepth,
+						"direction":       direction,
+						"nodes":           nodeList,
+						"edges":           edgeList,
+					})},
+				},
+			}
+
+		case "list_broken_links":
+			type BrokenLink struct {
+				SourceConceptID string `json:"source_concept_id"`
+				SourceTitle     string `json:"source_title"`
+				TargetWikilink  string `json:"target_wikilink"`
+			}
+
+			var brokenLinks []BrokenLink
+			allConcepts := s.store.List()
+			wikilinkRegex := regexp.MustCompile(`\[\[(.*?)\]\]`)
+
+			for _, concept := range allConcepts {
+				matches := wikilinkRegex.FindAllStringSubmatch(concept.BodyMarkdown, -1)
+				visitedTargets := make(map[string]bool)
+
+				for _, match := range matches {
+					if len(match) > 1 {
+						targetID := match[1]
+						if visitedTargets[targetID] {
+							continue
+						}
+						visitedTargets[targetID] = true
+
+						if _, exists := s.store.Get(targetID); !exists {
+							title := concept.Frontmatter.Title
+							if title == "" {
+								title = concept.ID
+							}
+							brokenLinks = append(brokenLinks, BrokenLink{
+								SourceConceptID: concept.ID,
+								SourceTitle:     title,
+								TargetWikilink:  targetID,
+							})
+						}
+					}
+				}
+			}
+
+			resp.Result = map[string]any{
+				"content": []map[string]any{
+					{"type": "text", "text": marshalJSON(map[string]any{
+						"broken_links": brokenLinks,
+						"total_count":  len(brokenLinks),
+					})},
+				},
+			}
 		default:
 			resp.Error = map[string]any{"code": -32601, "message": fmt.Sprintf("Tool '%s' not found", callParams.Name)}
 		}
 	default:
 		resp.Error = map[string]any{"code": -32601, "message": fmt.Sprintf("Method '%s' not supported", req.Method)}
-
 	}
 	return resp
 }

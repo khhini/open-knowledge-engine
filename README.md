@@ -32,20 +32,33 @@ Computes credibility at read-time instead of storing static scores:
 - Displays **Referenced By (Backlinks)** and **Links To** cards for instant graph traversal.
 
 ### 4. Model Context Protocol (MCP) Server for LLM Agents
-- Native JSON-RPC 2.0 MCP handler in Go (`pkg/mcp/server.go`) supporting `initialize`, `notifications/initialized`, `tools/list`, and `tools/call`.
-- Exposes tools (`search_knowledge`, `read_concept`, `create_concept`) to LLM agents (Claude Code, Cursor, Windsurf, or custom subagents).
-- Includes panic recovery and type-safe argument extraction.
+- Native JSON-RPC 2.0 MCP handler in Go (`pkg/mcp/server.go`) supporting both standard `stdio` (`-mcp-stdio`) and HTTP Server-Sent Events (`/mcp/sse`).
+- Full toolset (9 tools):
+  1. `search_knowledge`: Keyword search with `tier` and `concept_type` filters.
+  2. `read_concept`: Full concept view with optional multi-source simulation inspection (`include_source_truth`).
+  3. `create_concept`: Concept creation with full OKF v0.2 frontmatter fields (`resource`, `sources`, `tags`, `stale_after`).
+  4. `update_concept`: Dual-parameter body update (`body` replace / `append_body`) and YAML frontmatter field edits.
+  5. `verify_concept`: Attestation submission promoting concept Trust Tier.
+  6. `inspect_source_of_truth`: Simulation inspection for Google Drive PDFs, Google Sheets, GCS objects, and database schemas.
+  7. `get_backlinks`: 1-hop reverse lookup for incoming links (impact analysis).
+  8. `traverse_graph`: N-hop breadth-first search graph traversal (`max_depth: 1..4`).
+  9. `list_broken_links`: Automated detection of dangling `[[wikilinks]]`.
 
-### 5. Interactive 2D Knowledge Graph Visualizer
+### 5. Source of Truth & External File Storage Simulator
+- **Canonical Resource & Upstream Lineage**: Renders canonical source of truth banners and upstream lineage cards for concepts linking to external assets.
+- **Local File Store Simulator (`.source_of_truth/`)**: Simulates external document storage (Google Drive, Cloud Storage GCS, AWS S3, local file shares) holding PDFs, Google Docs, Spreadsheets, and CSVs without requiring cloud tokens during local dev/testing.
+- **Interactive HTMX Document Inspector Drawer**: Side drawer allowing humans to inspect document summaries, page counts, owner badges, spreadsheet column schemas, and text snippets.
+
+### 6. Interactive 2D Knowledge Graph Visualizer
 - Force-directed graph canvas modal (`force-graph` + UnoCSS).
 - Color-coded nodes by **Trust Tier**.
 - Smoothly centers, zooms, and highlights the currently active concept with a glowing cyan ring.
 
-### 6. Real-Time Hot-Reload File Watcher (`fsnotify`)
+### 7. Real-Time Hot-Reload File Watcher (`fsnotify`)
 - Recursively monitors the `knowledge/` directory for `.md` file edits from Git (`git pull`), Obsidian, text editors, or AI agents.
 - Automatically re-indexes the memory store and updates `index.md` in real-time without server restarts.
 
-### 7. Dynamic Sidebar Filters
+### 8. Dynamic Sidebar Filters
 - Real-time filtering by keyword query, **Trust Tier** (Human, Machine, Unverified), and **Concept Type** (`BigQuery Table`, `PostgreSQL Table`, `Metric`, `Policy`, `API Endpoint`, `Playbook`).
 
 ---
@@ -62,17 +75,29 @@ Computes credibility at read-time instead of storing static scores:
 │   │   ├── spec.go              # OKF v0.2 structs & actor conventions
 │   │   ├── trust.go             # Dynamic trust tier calculation algorithm
 │   │   └── generator.go         # Reserved index.md and log.md auto-generators
+│   ├── sourcetruth/
+│   │   ├── models.go            # AssetType, Column, Inspection data models
+│   │   ├── resolver.go          # URI parser for gdrive://, gs://, s3://, file://
+│   │   ├── simulator.go         # Inspector engine reading local metadata & text snippets
+│   │   └── resolver_test.go     # Go unit tests for external storage simulator
 │   ├── store/
 │   │   └── memory.go            # Thread-safe in-memory graph store & search
 │   ├── mcp/
-│   │   └── server.go            # Panic-safe MCP JSON-RPC 2.0 server
+│   │   ├── server.go            # Panic-safe MCP JSON-RPC 2.0 server with 9 tools
+│   │   ├── sse.go               # HTTP Server-Sent Events (SSE) streaming transport
+│   │   └── server_test.go       # Go unit & integration test suite for MCP
 │   └── watcher/
 │       └── watcher.go           # Real-time fsnotify file watcher with debouncing
+├── .source_of_truth/            # Local File Storage Simulator Corpus
+│   ├── gdrive/                  # Google Drive PDF & Spreadsheet mock files
+│   ├── gcs/                     # Google Cloud Storage mock objects
+│   └── s3/                      # AWS S3 mock exports
 ├── templates/
 │   ├── index.html               # Main htmx layout with UnoCSS & Force Graph modal
 │   └── fragments/
 │       ├── list.html            # Sidebar concept list with Trust Tier & Type filters
-│       ├── concept.html         # Concept workspace with backlinks & UnoCSS typography
+│       ├── concept.html         # Concept workspace with backlinks & Source of Truth banners
+│       ├── source_inspector.html# Interactive HTMX Document & Schema Inspector Drawer
 │       └── trust_badge.html     # Interactive human verification fragment
 └── knowledge/                   # OKF v0.2 Markdown Corpus
     ├── index.md                 # Auto-generated bundle index

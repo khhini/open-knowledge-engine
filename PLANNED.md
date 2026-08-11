@@ -90,7 +90,8 @@ timeline
 ```
 
 ### Phase 1: Core Tooling & Verification (Short-Term)
-- [ ] Implement expanded MCP tools (`update_concept`, `verify_concept`, `traverse_graph`, `list_broken_links`).
+- [x] Implement expanded MCP tools (`update_concept`, `verify_concept`, `traverse_graph`, `get_backlinks`, `list_broken_links`).
+- [x] Implement HTTP Server-Sent Events (SSE) streaming transport (`/mcp/sse`).
 - [ ] Build `okf lint` CLI validation tool.
 - [ ] Support dynamic user identity attribution in human verification flow.
 
@@ -101,5 +102,4 @@ timeline
 
 ### Phase 3: AI Intelligence & Automation (Long-Term)
 - [ ] Integrate local vector embeddings for semantic hybrid RAG search.
-- [ ] Implement MCP Server-Sent Events (SSE) HTTP transport.
 - [ ] Build automated Attestation execution runner.

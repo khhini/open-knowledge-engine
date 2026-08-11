@@ -230,6 +230,10 @@ func main() {
 
 	http.Handle("/mcp", mcpServer)
 
+	sseTransport := mcp.NewSSETransport(mcpServer)
+	http.HandleFunc("/mcp/sse", sseTransport.HandleSSE)
+	http.HandleFunc("/mcp/message", sseTransport.HandleMessage)
+
 	fmt.Println("Server running at http://localhost:8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
