@@ -76,6 +76,104 @@ Computes credibility at read-time instead of storing static scores:
 
 ---
 
+## 🏛️ System Architecture
+
+> For the long-term target architecture vision (hybrid RAG search, automated attestation runners, and federated mesh), see **[END_GOALS_HIGH_LEVEL_ARCHITECTURE.md](docs/END_GOALS_HIGH_LEVEL_ARCHITECTURE.md)**.
+
+### 1. High-Level Component & Transport Architecture
+
+The platform utilizes a text-native, zero-database architecture in Go. The diagram below details the interactions between interactive client interfaces, transport protocols, the Go core engine, and storage corpora.
+
+```mermaid
+flowchart TD
+    subgraph Clients["1. Client & Integration Tier"]
+        UI["Web Browser Workspace<br/>(htmx + UnoCSS + 2D Force Graph)"]
+        Agents["LLM AI Agents<br/>(Claude Code, Cursor, Windsurf, agy)"]
+        Skill[".agents/skills/local-file-ingestor<br/>(Open Agent Skills Protocol)"]
+    end
+
+    subgraph Protocol["2. Transport Protocol Tier"]
+        HTTP_UI["HTTP Web Router<br/>(/, /search, /concept, /api/graph, /api/source-truth/inspect)"]
+        MCP_HTTP["MCP HTTP JSON-RPC 2.0<br/>(/mcp)"]
+        MCP_SSE["MCP SSE Streaming<br/>(/mcp/sse, /mcp/message)"]
+    end
+
+    subgraph Core["3. Go Core Engine Tier"]
+        Server["cmd/server/main.go<br/>(Server Init, Routing & Middleware)"]
+        MCPServer["pkg/mcp: MCPServer (9 Tools)<br/>• search_knowledge • read_concept<br/>• create_concept • update_concept<br/>• verify_concept • inspect_source_of_truth<br/>• get_backlinks • traverse_graph<br/>• list_broken_links"]
+        MemStore["pkg/store: MemoryStore<br/>• In-Memory Graph & Wikilinks Index<br/>• Filtered Search & Traversal Engine"]
+        TrustEngine["pkg/okf: Trust & Spec Engine<br/>• Dynamic Trust Tier Evaluator<br/>• Reserved index.md & log.md Generators"]
+        Inspector["pkg/sourcetruth: Simulator<br/>• Local & External Asset Inspector<br/>• Schema, Metadata & Snippet Extractor"]
+        Watcher["pkg/watcher: File Watcher<br/>• fsnotify Debounced Hot-Reloading"]
+    end
+
+    subgraph Storage["4. Storage & Multi-Source Simulation Corpus"]
+        Corpus["knowledge/ concepts/*.md<br/>(OKF v0.2 Markdown + YAML Frontmatter)"]
+        SimulatorCorpus[".source_of_truth/ Multi-Source Simulator<br/>• Cloud DBs: BigQuery, Postgres, Snowflake<br/>• SaaS Hubs: Google Workspace, Confluence, Notion<br/>• PKM Notes: Obsidian, Roam, Logseq<br/>• Project Mgmt: Jira, Linear, GitHub, Slack<br/>• Pipelines: dbt, Airflow, Temporal, Kafka"]
+    end
+
+    UI --> HTTP_UI --> Server
+    Agents --> Skill --> MCP_HTTP & MCP_SSE & MCP_Stdio
+    MCP_HTTP & MCP_SSE & MCP_Stdio --> MCPServer
+    Server --> MemStore & TrustEngine & Inspector & Watcher
+    MCPServer --> MemStore & Inspector & TrustEngine
+    MemStore <--> Corpus
+    Inspector <--> SimulatorCorpus
+    Watcher -->|fsnotify event| MemStore
+```
+
+### 2. Autonomous Agent Ingestion & Attestation Flow
+
+This sequence shows how an AI agent autonomously inspects multi-source external assets, ingests & decomposes concepts into OKF v0.2 format, attests credibility, and updates the human web workspace in real time.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Human as Human / Domain Expert
+    participant Agent as LLM Agent (MCP Client)
+    participant MCP as MCP Server Engine
+    participant Sim as Source of Truth Simulator
+    participant Store as Memory Store & Watcher
+    participant UI as Web Workspace (htmx)
+
+    Agent->>MCP: 1. inspect_source_of_truth(uri)
+    MCP->>Sim: Resolve & parse asset (gdrive, bq, postgres, dbt)
+    Sim-->>MCP: Technical metadata, column schemas & text snippets
+    MCP-->>Agent: JSON inspection payload
+
+    Agent->>MCP: 2. create_concept(concept_id, frontmatter, body)
+    MCP->>Store: Write OKF v0.2 concept.md file to knowledge/
+    Store->>Store: fsnotify event triggers re-index & index.md generation
+
+    Agent->>MCP: 3. verify_concept(concept_id, actor, notes)
+    MCP->>Store: Append verification receipt & log.md entry
+    
+    Human->>UI: 4. Open workspace or search concept
+    UI->>Store: GET /concept & GET /api/graph
+    Store-->>UI: Render htmx workspace, backlinks & Trust Tier badge
+```
+
+### 3. Dynamic Trust Tier State Machine
+
+The Trust Tier engine evaluates credibility dynamically at read-time based on frontmatter attestation records and `stale_after` expiration limits.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unverified: Concept Created (Default State)
+    Unverified --> MachineConfirmed: Verified by process:id or agent
+    Unverified --> HumanReviewed: Verified by human:username
+    MachineConfirmed --> HumanReviewed: Upgraded by human review
+    MachineConfirmed --> Stale: Date exceeds stale_after threshold
+    HumanReviewed --> Stale: Date exceeds stale_after threshold
+    Unverified --> Stale: Date exceeds stale_after threshold
+    Stale --> HumanReviewed: Re-verified by human
+    Stale --> MachineConfirmed: Re-verified by process/agent
+```
+
+
+
+---
+
 ## Directory Architecture
 
 ```text
@@ -84,9 +182,11 @@ Computes credibility at read-time instead of storing static scores:
 │   └── server/
 │       └── main.go              # Server routing, flag parsing, and HTTP handlers
 ├── docs/
-│   ├── LOCAL_FILE_INGESTION_SKILLS_SPEC.md # Spec for Local File Ingestion Agent Skills
+│   ├── DESKRIPSI_DAN_TARGET_PENGGUNA.md    # Ringkasan Proyek, Solusi, & Target Pengguna (ID)
+│   ├── END_GOALS_HIGH_LEVEL_ARCHITECTURE.md # Target Vision System Architecture Spec
+│   ├── LOCAL_FILE_INGESTION_SKILLS_SPEC.md  # Spec for Local File Ingestion Agent Skills
 │   ├── SOURCE_OF_TRUTH_LOCAL_SIMULATION_SPEC.md # Spec for Source of Truth Simulation
-│   └── MCP_EXPANSION_SPEC.md     # Spec for Model Context Protocol Expansion
+│   └── MCP_EXPANSION_SPEC.md      # Spec for Model Context Protocol Expansion
 ├── .agents/
 │   └── skills/
 │       └── local-file-ingestor/
