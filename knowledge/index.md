@@ -10,9 +10,19 @@
 | [`concepts/customer_profiles`](/concepts/customer_profiles.md) | `API Endpoint` | Customer Profiles API | **Human-Reviewed** | `stable` |
 | [`concepts/data_retention_policy`](/concepts/data_retention_policy.md) | `Policy` | GDPR Customer Data Retention Policy | **Human-Reviewed** | `stable` |
 | [`concepts/dbt_orders_mart`](/concepts/dbt_orders_mart.md) | `dbt Model` | Customer Orders Data Mart Model | **Unverified** | `stable` |
+| [`concepts/dynamic_trust_tier_engine`](/concepts/dynamic_trust_tier_engine.md) | `Trust Engine` | Dynamic Trust Tier Engine | **Machine-Confirmed** | `stable` |
+| [`concepts/external_storage_uri_mapping_scheme`](/concepts/external_storage_uri_mapping_scheme.md) | `Specification` | External Storage URI Scheme & Resolver Rules | **Machine-Confirmed** | `stable` |
 | [`concepts/fraud_detector`](/concepts/fraud_detector.md) | `Attested Computation` | Transaction Fraud Risk Model | **Unverified** | `stable` |
 | [`concepts/freshness_playbook`](/concepts/freshness_playbook.md) | `Playbook` | Data Freshness Incident Response | **Human-Reviewed** | `stable` |
+| [`concepts/htmx_document_inspector_drawer`](/concepts/htmx_document_inspector_drawer.md) | `UI Component` | HTMX Document & Schema Inspector Drawer Component | **Machine-Confirmed** | `stable` |
+| [`concepts/local_file_ingestion_skill`](/concepts/local_file_ingestion_skill.md) | `Agent Skill` | Local File Ingestion Agent Skill | **Machine-Confirmed** | `stable` |
+| [`concepts/okf_mcp_server`](/concepts/okf_mcp_server.md) | `MCP Server` | OKF Knowledge Engine MCP Server | **Machine-Confirmed** | `stable` |
+| [`concepts/okf_v02_specification`](/concepts/okf_v02_specification.md) | `Specification` | Open Knowledge Format v0.2 Specification | **Machine-Confirmed** | `stable` |
+| [`concepts/open_knowledge_engine_platform`](/concepts/open_knowledge_engine_platform.md) | `Software Architecture` | Enterprise Open Knowledge Engine Platform | **Machine-Confirmed** | `stable` |
 | [`concepts/order_fulfillment_pipeline`](/concepts/order_fulfillment_pipeline.md) | `Data Pipeline` | Daily Order Fulfillment & Billing Sync Pipeline | **Human-Reviewed** | `stable` |
 | [`concepts/real_time_checkout_events`](/concepts/real_time_checkout_events.md) | `Kafka Topic` | Real-Time Checkout Events Stream | **Unverified** | `stable` |
 | [`concepts/revenue_metric`](/concepts/revenue_metric.md) | `Metric` | Monthly Recurring Revenue (MRR) | **Unverified** | `stable` |
+| [`concepts/source_of_truth_local_simulation_spec`](/concepts/source_of_truth_local_simulation_spec.md) | `Specification` | Source of Truth Local File Storage Simulation Specification | **Unverified** | `stable` |
+| [`concepts/source_of_truth_simulation_spec`](/concepts/source_of_truth_simulation_spec.md) | `Specification` | Source of Truth Local File Storage Simulation Specification | **Unverified** | `stable` |
+| [`concepts/source_of_truth_simulator`](/concepts/source_of_truth_simulator.md) | `Storage Simulator` | Source of Truth External File Simulator | **Machine-Confirmed** | `stable` |
 | [`concepts/subscription_plans`](/concepts/subscription_plans.md) | `PostgreSQL Table` | Subscription Plans Table | **Human-Reviewed** | `stable` |
