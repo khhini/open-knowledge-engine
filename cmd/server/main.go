@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"text/template"
 	"time"
+
 
 	"github.com/khhini/open-knowledge-engine.git/pkg/mcp"
 	"github.com/khhini/open-knowledge-engine.git/pkg/okf"
@@ -234,6 +236,12 @@ func main() {
 	http.HandleFunc("/mcp/sse", sseTransport.HandleSSE)
 	http.HandleFunc("/mcp/message", sseTransport.HandleMessage)
 
-	fmt.Println("Server running at http://localhost:8080")
-	log.Fatal(http.ListenAndServe(":8080", nil))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("Server running at http://localhost:%s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
+

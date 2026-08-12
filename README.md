@@ -285,10 +285,26 @@ go get github.com/fsnotify/fsnotify
 ### Running the Web Server
 
 ```bash
-go run cmd/server/main.go
-```
-
 Open your browser at `http://localhost:8080` to access the interactive platform.
+
+### 🚀 Google Cloud Run Deployment (`just`)
+
+Deploy the platform to **Google Cloud Run** using [`just`](justfile):
+
+```bash
+# 1. Initialize GCP project and enable Cloud Run & Container APIs
+just gcp-init YOUR_PROJECT_ID
+
+# 2. Deploy directly from source code (Recommended)
+just deploy-source YOUR_PROJECT_ID
+
+# Alternatively, deploy via Artifact Registry & Cloud Build pipeline
+just deploy-build YOUR_PROJECT_ID
+
+# 3. Check deployment status & tail live logs
+just status YOUR_PROJECT_ID
+just logs YOUR_PROJECT_ID
+```
 
 ### Connecting to LLM AI Agents (MCP Mode)
 
