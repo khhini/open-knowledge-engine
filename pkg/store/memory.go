@@ -41,8 +41,8 @@ func NewMemoryStore(baseDir string) *MemoryStore {
 }
 
 func (s *MemoryStore) LoadAll() error {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
+	s.mu.Lock()
+	defer s.mu.Unlock()
 
 	s.concepts = make(map[string]*okf.Concept)
 	s.outgoing = make(map[string][]string)

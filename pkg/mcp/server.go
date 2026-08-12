@@ -38,7 +38,7 @@ type JSONRPCRequest struct {
 }
 
 type JSONRPCResponse struct {
-	JSONRCP string `json:"jsonrpc"`
+	JSONRPC string `json:"jsonrpc"`
 	ID      any    `json:"id"`
 	Result  any    `json:"result,omitempty"`
 	Error   any    `json:"error,omitempty"`
@@ -50,7 +50,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 		return nil
 	}
 
-	resp := &JSONRPCResponse{JSONRCP: "2.0", ID: req.ID}
+	resp := &JSONRPCResponse{JSONRPC: "2.0", ID: req.ID}
 
 	switch req.Method {
 	case "initialize":
@@ -401,7 +401,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 					}
 
 					visitedURIs[uri] = true
-					if insp, err := s.simulator.Inspect(uri); err != nil {
+					if insp, err := s.simulator.Inspect(uri); err == nil {
 						if len(insp.TextSnippet) > 500 {
 							insp.TextSnippet = insp.TextSnippet[:500] + "\n... [Truncated for multi-source]"
 						}
@@ -558,7 +558,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 					existingFM.Status = val
 				}
 
-				if val, ok := fmUpdates["resouce"].(string); ok && val != "" {
+				if val, ok := fmUpdates["resource"].(string); ok && val != "" {
 					existingFM.Resource = val
 				}
 
@@ -717,7 +717,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 			}
 
 		case "traverse_graph":
-			rootID, _ := callParams.Arguments["root_content_id"].(string)
+			rootID, _ := callParams.Arguments["root_concept_id"].(string)
 			maxDepth := 2
 			if d, ok := callParams.Arguments["max_depth"].(float64); ok && d > 0 {
 				maxDepth = int(d)
