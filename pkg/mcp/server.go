@@ -462,7 +462,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				}
 			}
 
-			fm := okf.Frontmatter{
+			fm := &okf.Frontmatter{
 				Type:        conceptType,
 				Title:       title,
 				Description: description,
@@ -477,8 +477,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				},
 			}
 
-			yamlBytes, _ := yaml.Marshal(fm)
-			fileContent := fmt.Sprintf("---\n%s---\n\n%s", string(yamlBytes), body)
+			fileContent, _ := okf.FormatConcept(fm, body)
 
 			fullPath := filepath.Join(s.baseDir, conceptID+".md")
 			_ = os.MkdirAll(filepath.Dir(fullPath), 0755)
@@ -600,9 +599,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				existingBody = existingBody + "\n\n" + strings.TrimSpace(appendBody)
 			}
 
-			// Re-serialize frontmatter and write to disk
-			yamlBytes, _ := yaml.Marshal((existingFM))
-			updatedContent := fmt.Sprintf("---\n%s---\n\n%s\n", string(yamlBytes), existingBody)
+			updatedContent, _ := okf.FormatConcept(&existingFM, existingBody)
 
 			if err := os.WriteFile(fullPath, []byte(updatedContent), 0644); err != nil {
 				resp.Error = map[string]any{"code": -32603, "message": err.Error()}
@@ -656,8 +653,7 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 				Notes: notes,
 			})
 
-			yamlBytes, _ := yaml.Marshal(existingFM)
-			updatedContent := fmt.Sprintf("---\n%s---\n\n%s\n", string(yamlBytes), existingBody)
+			updatedContent, _ := okf.FormatConcept(&existingFM, existingBody)
 
 			if err := os.WriteFile(fullPath, []byte(updatedContent), 0644); err != nil {
 				resp.Error = map[string]any{"code": -32603, "message": err.Error()}

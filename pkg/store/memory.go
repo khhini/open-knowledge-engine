@@ -1,20 +1,13 @@
 package store
 
 import (
-	"bytes"
-	"fmt"
-	"html/template"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/khhini/open-knowledge-engine.git/pkg/okf"
-	"github.com/yuin/goldmark"
-	"github.com/yuin/goldmark/extension"
-	"gopkg.in/yaml.v3"
 )
 
 type ConceptView struct {
@@ -59,7 +52,7 @@ func (s *MemoryStore) LoadAll() error {
 			return nil // Skip reserved files in root/subdirs if needed
 		}
 
-		concept, err := parseMarkdownFile(relPath, path)
+		concept, err := okf.ParseConcept(relPath, path)
 		if err != nil {
 			return nil
 		}
@@ -207,51 +200,4 @@ func (s *MemoryStore) GetConceptView(id string) (*ConceptView, bool) {
 	}
 
 	return view, true
-}
-
-var markdownParser = goldmark.New(
-	goldmark.WithExtensions(extension.Table, extension.GFM),
-)
-
-func parseMarkdownFile(relPath, fullPath string) (*okf.Concept, error) {
-	content, err := os.ReadFile(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	parts := bytes.SplitN(content, []byte("\n---"), 2)
-	if len(parts) < 2 {
-		return nil, fmt.Errorf("invalid frontmatterl in %s", fullPath)
-	}
-
-	frontmatterBytes := bytes.TrimPrefix(parts[0], []byte("---\n"))
-	bodyMarkdown := string(parts[1])
-
-	var fm okf.Frontmatter
-	if err := yaml.Unmarshal(frontmatterBytes, &fm); err != nil {
-		return nil, err
-	}
-
-	if fm.Type == "" {
-		return nil, fmt.Errorf("missing type key in %s", fullPath)
-	}
-
-	// Render Markdown body to HTML
-	var htmlBuf bytes.Buffer
-	if err := markdownParser.Convert([]byte(bodyMarkdown), &htmlBuf); err != nil {
-		htmlBuf.WriteString(bodyMarkdown) // Fallback to raw text if error
-	}
-
-	conceptID := strings.TrimSuffix(relPath, ".md")
-	trustTier := okf.EvaluateTrustTier(&fm, time.Now())
-
-	return &okf.Concept{
-		ID:           conceptID,
-		FilePath:     fullPath,
-		Frontmatter:  fm,
-		BodyMarkdown: bodyMarkdown,
-		BodyHTML:     template.HTML(htmlBuf.String()),
-		TrustTier:    string(trustTier),
-		IsStale:      trustTier == okf.TierStale,
-	}, nil
 }
