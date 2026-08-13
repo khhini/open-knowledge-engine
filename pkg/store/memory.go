@@ -42,17 +42,14 @@ func (s *MemoryStore) LoadAll() error {
 	s.incoming = make(map[string][]string)
 
 	return filepath.WalkDir(s.baseDir, func(path string, d os.DirEntry, err error) error {
-
 		if err != nil || d.IsDir() || !strings.HasSuffix(path, ".md") {
 			return err
 		}
-
-		relPath, _ := filepath.Rel(s.baseDir, path)
 		if d.Name() == "index.md" || d.Name() == "log.md" {
 			return nil // Skip reserved files in root/subdirs if needed
 		}
 
-		concept, err := okf.ParseConcept(relPath, path)
+		concept, err := okf.ParseConcept(path)
 		if err != nil {
 			return nil
 		}

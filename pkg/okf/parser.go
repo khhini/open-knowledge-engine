@@ -17,7 +17,7 @@ var markdownParser = goldmark.New(
 	goldmark.WithExtensions(extension.Table, extension.GFM),
 )
 
-func ParseConcept(relPath, fullPath string) (*Concept, error) {
+func ParseConcept(fullPath string) (*Concept, error) {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read concept file in %s: %w", fullPath, err)
@@ -46,7 +46,7 @@ func ParseConcept(relPath, fullPath string) (*Concept, error) {
 		htmlBuf.WriteString(bodyMarkdown) // Fallback to raw text if error
 	}
 
-	conceptID := strings.TrimSuffix(relPath, ".md")
+	conceptID := strings.TrimSuffix(fullPath, ".md")
 	trustTier := EvaluateTrustTier(&fm, time.Now())
 
 	return &Concept{
