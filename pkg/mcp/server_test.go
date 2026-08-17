@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http/httptest"
 	"os"
@@ -171,12 +172,25 @@ func TestMCP_SSETransport(t *testing.T) {
 
 	sseTransport := NewSSETransport(server)
 
-	// Test GET /mcp/sse session creation
-	reqSSE := httptest.NewRequest("GET", "/mcp/sse", nil)
+	// Test GET /mcp/sse session creation with cancellable context
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	reqSSE := httptest.NewRequest("GET", "/mcp/sse", nil).WithContext(ctx)
 	wSSE := httptest.NewRecorder()
 
-	go sseTransport.HandleSSE(wSSE, reqSSE)
-	time.Sleep(100 * time.Millisecond)
+	done := make(chan struct{})
+	go func() {
+		sseTransport.HandleSSE(wSSE, reqSSE)
+		close(done)
+	}()
+
+	// Let it write the initial event
+	time.Sleep(50 * time.Millisecond)
+
+	// Cancel context to stop HandleSSE
+	cancel()
+	<-done
 
 	bodyStr := wSSE.Body.String()
 	if !strings.Contains(bodyStr, "event: endpoint") {

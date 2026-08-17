@@ -58,6 +58,10 @@ func (s *MemoryStore) LoadAll() error {
 			return nil
 		}
 
+		if rel, err := filepath.Rel(s.baseDir, path); err == nil {
+			concept.ID = strings.TrimSuffix(rel, ".md")
+		}
+
 		s.concepts[concept.ID] = concept
 		s.indexLinks(concept.ID, concept.BodyMarkdown)
 
