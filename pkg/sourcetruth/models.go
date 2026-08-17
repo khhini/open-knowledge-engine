@@ -12,7 +12,7 @@ const (
 	TypeBigQuery    AssetType = "BigQuery Table"
 	TypePostgres    AssetType = "Postgres Table"
 	TypeAPI         AssetType = "API Endpoint"
-	TypteDBT        AssetType = "dbt Model"
+	TypeDBT         AssetType = "dbt Model"
 	TypeLocalFile   AssetType = "Local File"
 	TypeUnknown     AssetType = "Unknown Asset"
 )

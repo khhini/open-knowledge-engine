@@ -1,7 +1,6 @@
 package sourcetruth
 
 import (
-	"encoding/json"
 	"os"
 	"testing"
 )
@@ -13,8 +12,6 @@ func TestSimulator_InspectGDrive(t *testing.T) {
 	}
 
 	inspection, err := sim.Inspect("https://internal.docs/finance/mrr_spec.pdf")
-	val, _ := json.Marshal(inspection)
-	t.Log(string(val))
 
 	if err != nil {
 		t.Fatalf("Unexpected error inspecting GDrive document: %v", err)
@@ -40,9 +37,6 @@ func TestSimulator_InspectSpreadsheet(t *testing.T) {
 	}
 
 	inspection, err := sim.Inspect("https://docs.google.com/spreadsheets/d/9Z8Y7X6W5V4U3T2S1R0Q/edit")
-
-	val, _ := json.Marshal(inspection)
-	t.Log(string(val))
 
 	if err != nil {
 		t.Fatalf("Unexpected error inspecting Spreadsheet: %v", err)

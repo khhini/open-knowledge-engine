@@ -54,9 +54,9 @@ func AppendLogEntry(baseDir string, actor Actor, action string, conceptID string
 	}
 	defer f.Close()
 
-	timepstamp := time.Now().Format(time.RFC3339)
+	timestamp := time.Now().Format(time.RFC3339)
 	entry := fmt.Sprintf("- **%s** [%s] `%s` by `%s`: %s\n",
-		timepstamp, action, conceptID, actor, summary)
+		timestamp, action, conceptID, actor, summary)
 
 	_, err = f.WriteString(entry)
 	return err

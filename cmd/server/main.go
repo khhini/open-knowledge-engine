@@ -24,13 +24,13 @@ func main() {
 
 	if concepts := memStore.List(); len(concepts) > 0 {
 		if err := okf.GenerateBundleIndex(concepts, knowledgeDir); err != nil {
-			log.Printf("Warnig: failed to generate index.md: %v", err)
+			log.Printf("Warning: failed to generate index.md: %v", err)
 		}
 	}
 
 	fw, err := watcher.StartWatcher(knowledgeDir, memStore)
 	if err != nil {
-		log.Printf("Waring: File watcher failed to initialize: %v", err)
+		log.Printf("Warning: File watcher failed to initialize: %v", err)
 	} else {
 		defer fw.Close()
 	}

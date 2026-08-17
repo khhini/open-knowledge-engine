@@ -6,7 +6,7 @@ func ResolveLocalPath(rootDir, uriStr string) (localPath, metaPath string, asset
 	trimmed := strings.TrimSpace(uriStr)
 
 	// 1. Google Drive & Docs URLs
-	if strings.Contains(trimmed, "drive.googel.com") || strings.Contains(trimmed, "docs.google.com") || strings.HasPrefix(trimmed, "gdrive://") {
+	if strings.Contains(trimmed, "drive.google.com") || strings.Contains(trimmed, "docs.google.com") || strings.HasPrefix(trimmed, "gdrive://") {
 		if strings.Contains(trimmed, "mrr_spec") || strings.Contains(trimmed, "1A2B3C4D5E6F7G8H9I0J") {
 			return rootDir + "/gdrive/finance/mrr_spec.pdf.txt",
 				rootDir + "/gdrive/finance/mrr_spec.pdf.meta.json",

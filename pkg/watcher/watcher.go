@@ -17,7 +17,7 @@ type Watcher struct {
 	mu       sync.Mutex
 	baseDir  string
 	memStore *store.MemoryStore
-	wathcher *fsnotify.Watcher
+	watcher  *fsnotify.Watcher
 	timer    *time.Timer
 }
 
@@ -30,7 +30,7 @@ func StartWatcher(baseDir string, memStore *store.MemoryStore) (*Watcher, error)
 	w := &Watcher{
 		baseDir:  baseDir,
 		memStore: memStore,
-		wathcher: fsWatcher,
+		watcher:  fsWatcher,
 	}
 
 	err = filepath.Walk(baseDir, func(path string, info os.FileInfo, err error) error {
@@ -52,14 +52,14 @@ func StartWatcher(baseDir string, memStore *store.MemoryStore) (*Watcher, error)
 func (w *Watcher) eventLoop() {
 	for {
 		select {
-		case event, ok := <-w.wathcher.Events:
+		case event, ok := <-w.watcher.Events:
 			if !ok {
 				return
 			}
 
 			if event.Has(fsnotify.Create) {
 				if info, err := os.Stat(event.Name); err == nil && info.IsDir() {
-					_ = w.wathcher.Add(event.Name)
+					_ = w.watcher.Add(event.Name)
 					log.Printf("[FS WATCHER] Watching new directory: %s", event.Name)
 				}
 			}
@@ -71,7 +71,7 @@ func (w *Watcher) eventLoop() {
 				}
 			}
 
-		case err, ok := <-w.wathcher.Errors:
+		case err, ok := <-w.watcher.Errors:
 			if !ok {
 				return
 			}
@@ -104,5 +104,5 @@ func (w *Watcher) debounceReload(event fsnotify.Event) {
 }
 
 func (w *Watcher) Close() error {
-	return w.wathcher.Close()
+	return w.watcher.Close()
 }
