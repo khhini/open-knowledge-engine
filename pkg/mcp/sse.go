@@ -14,15 +14,15 @@ type SSESession struct {
 }
 
 type SSETransport struct {
-	MCPServer *MCPServer
-	mu        sync.RWMutex
-	sessions  map[string]*SSESession
+	dispatcher RPCDispatcher
+	mu         sync.RWMutex
+	sessions   map[string]*SSESession
 }
 
-func NewSSETransport(mcpServer *MCPServer) *SSETransport {
+func NewSSETransport(dispatcher RPCDispatcher) *SSETransport {
 	return &SSETransport{
-		MCPServer: mcpServer,
-		sessions:  make(map[string]*SSESession),
+		dispatcher: dispatcher,
+		sessions:   make(map[string]*SSESession),
 	}
 }
 
@@ -108,7 +108,7 @@ func (t *SSETransport) HandleMessage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := t.MCPServer.HandleRPC(req)
+	resp := t.dispatcher.HandleRPC(req)
 	if resp != nil {
 		respJSON := marshalJSON(resp)
 		select {

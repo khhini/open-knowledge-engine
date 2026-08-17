@@ -33,6 +33,10 @@ func NewMemoryStore(baseDir string) *MemoryStore {
 	}
 }
 
+func (s *MemoryStore) GetBaseDir() string {
+	return s.baseDir
+}
+
 func (s *MemoryStore) LoadAll() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()

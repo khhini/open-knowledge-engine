@@ -10,17 +10,10 @@ import (
 )
 
 type MCPServer struct {
-	store     *store.MemoryStore
-	baseDir   string
-	simulator *sourcetruth.Simulator
-}
-
-func NewMCPServer(store *store.MemoryStore, baseDir string, simulator *sourcetruth.Simulator) *MCPServer {
-	return &MCPServer{
-		store:     store,
-		baseDir:   baseDir,
-		simulator: simulator,
-	}
+	store        *store.MemoryStore
+	baseDir      string
+	simulator    *sourcetruth.Simulator
+	sseTransport *SSETransport
 }
 
 type JSONRPCRequest struct {
@@ -37,17 +30,18 @@ type JSONRPCResponse struct {
 	Error   any    `json:"error,omitempty"`
 }
 
-type JSONRPCError struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+type RPCDispatcher interface {
+	HandleRPC(req JSONRPCRequest) *JSONRPCResponse
 }
 
-func newInvalidParamsError(msg string) *JSONRPCError {
-	return &JSONRPCError{Code: -32602, Message: msg}
-}
+var _ RPCDispatcher = (*MCPServer)(nil)
 
-func newInternalError(msg string) *JSONRPCError {
-	return &JSONRPCError{Code: -32603, Message: msg}
+func NewMCPServer(store *store.MemoryStore, baseDir string, simulator *sourcetruth.Simulator) *MCPServer {
+	return &MCPServer{
+		store:     store,
+		baseDir:   baseDir,
+		simulator: simulator,
+	}
 }
 
 func (s *MCPServer) initializeResult() map[string]any {
@@ -60,6 +54,25 @@ func (s *MCPServer) initializeResult() map[string]any {
 			"name":    "okf-knowledge-engine",
 			"version": "0.2.0",
 		},
+	}
+}
+
+func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		return
+	}
+
+	var req JSONRPCRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	resp := s.HandleRPC(req)
+	if resp != nil {
+		json.NewEncoder(w).Encode(resp)
 	}
 }
 
@@ -122,23 +135,4 @@ func (s *MCPServer) HandleRPC(req JSONRPCRequest) *JSONRPCResponse {
 		resp.Error = map[string]any{"code": -32601, "message": fmt.Sprintf("Method '%s' not supported", req.Method)}
 	}
 	return resp
-}
-
-func (s *MCPServer) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var req JSONRPCRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	resp := s.HandleRPC(req)
-	if resp != nil {
-		json.NewEncoder(w).Encode(resp)
-	}
 }
